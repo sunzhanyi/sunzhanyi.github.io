@@ -2,3 +2,6 @@ baseURL = "https://sunzhanyi.github.io/"
 languageCode = "zh-cn"
 title = "Zhanyi 的技术博客"
 theme = "PaperMod"
+
+[params]
+  defaultTheme = "auto"
