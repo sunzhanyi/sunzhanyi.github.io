@@ -1,1 +1,3 @@
 content/posts/**/*.html
+/public/
+resources/
