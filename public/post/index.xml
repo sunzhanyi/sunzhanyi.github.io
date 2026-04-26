@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom" xmlns:content="http://purl.org/rss/1.0/modules/content/">
+  <channel>
+    <title>Posts on Zhanyi 的技术博客</title>
+    <link>http://localhost:1313/post/</link>
+    <description>Recent content in Posts on Zhanyi 的技术博客</description>
+    <generator>Hugo</generator>
+    <language>zh-cn</language>
+    <lastBuildDate>Sun, 26 Apr 2026 23:00:15 +0800</lastBuildDate>
+    <atom:link href="http://localhost:1313/post/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>Second</title>
+      <link>http://localhost:1313/post/second/</link>
+      <pubDate>Sun, 26 Apr 2026 23:00:15 +0800</pubDate>
+      <guid>http://localhost:1313/post/second/</guid>
+      <description>&lt;p&gt;现在开始第二篇写作，你准备好了吗？&lt;/p&gt;</description>
+    </item>
+    <item>
+      <title>Hello World!</title>
+      <link>http://localhost:1313/post/first/</link>
+      <pubDate>Sun, 26 Apr 2026 22:56:18 +0800</pubDate>
+      <guid>http://localhost:1313/post/first/</guid>
+      <description>&lt;p&gt;我决定开始用 Hugo 搭建一个技术博客，记录 Go、架构和 AI 学习过程。&lt;/p&gt;
+&lt;p&gt;这是一个开始。&lt;/p&gt;</description>
+    </item>
+  </channel>
+</rss>
