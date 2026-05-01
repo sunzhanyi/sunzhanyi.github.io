@@ -1,2 +1,68 @@
-<?xml version="1.0" encoding="utf-8" standalone="yes"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom" xmlns:content="http://purl.org/rss/1.0/modules/content/"><channel><title>Posts on Zhanyi 的技术博客</title><link>https://sunzhanyi.github.io/post/</link><description>Recent content in Posts on Zhanyi 的技术博客</description><generator>Hugo</generator><language>zh-cn</language><lastBuildDate>Sun, 26 Apr 2026 23:00:15 +0800</lastBuildDate><atom:link href="https://sunzhanyi.github.io/post/index.xml" rel="self" type="application/rss+xml"/><item><title>Second</title><link>https://sunzhanyi.github.io/post/second/</link><pubDate>Sun, 26 Apr 2026 23:00:15 +0800</pubDate><guid>https://sunzhanyi.github.io/post/second/</guid><description>&lt;p&gt;现在开始第二篇写作，你准备好了吗？&lt;/p&gt;</description></item><item><title>Hello World!</title><link>https://sunzhanyi.github.io/post/first/</link><pubDate>Sun, 26 Apr 2026 22:56:18 +0800</pubDate><guid>https://sunzhanyi.github.io/post/first/</guid><description>&lt;p&gt;我决定开始用 Hugo 搭建一个技术博客，记录 Go、架构和 AI 学习过程。&lt;/p&gt;
-&lt;p&gt;这是一个开始。&lt;/p&gt;</description></item></channel></rss>
+<?xml version="1.0" encoding="utf-8" standalone="yes"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom" xmlns:content="http://purl.org/rss/1.0/modules/content/"><channel><title>Posts on Zhanyi 的技术博客</title><link>https://sunzhanyi.github.io/post/</link><description>Recent content in Posts on Zhanyi 的技术博客</description><generator>Hugo</generator><language>zh-cn</language><lastBuildDate>Sun, 26 Apr 2026 23:00:15 +0800</lastBuildDate><atom:link href="https://sunzhanyi.github.io/post/index.xml" rel="self" type="application/rss+xml"/><item><title>为什么你的Go服务需要仓库模式</title><link>https://sunzhanyi.github.io/post/%E4%B8%BA%E4%BB%80%E4%B9%88%E4%BD%A0%E7%9A%84go%E6%9C%8D%E5%8A%A1%E9%9C%80%E8%A6%81%E4%BB%93%E5%BA%93%E6%A8%A1%E5%BC%8F/</link><pubDate>Sun, 26 Apr 2026 23:00:15 +0800</pubDate><guid>https://sunzhanyi.github.io/post/%E4%B8%BA%E4%BB%80%E4%B9%88%E4%BD%A0%E7%9A%84go%E6%9C%8D%E5%8A%A1%E9%9C%80%E8%A6%81%E4%BB%93%E5%BA%93%E6%A8%A1%E5%BC%8F/</guid><description>&lt;p&gt;在刚开始学习写 Go 服务的时候，把数据库的操作经常写在 handler 和 service 中。&lt;/p&gt;
+&lt;p&gt;起初，没觉得这种方式有什么问题而且效率还很高。随着业务和需求不断的增加，代码开始出现了各种问题：&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;单元测试如同水中月镜中花很难在项目中落地&lt;/li&gt;
+&lt;li&gt;业务逻辑和数据访问混在一起，被技术实现细节淹没&lt;/li&gt;
+&lt;li&gt;修改一个功能需要调整多个地方&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;出现这些问题的根本原因：业务逻辑和数据访问之间的边界不够清晰，导致数据访问这种变化在业务实现中随意扩散，系统也慢慢的走向了失控的边缘。&lt;/p&gt;
+&lt;p&gt;面对即将失控系统，有没有一种方式可以控制数据访问随意扩散，将这种变动限制在某一个范围内呢？&lt;/p&gt;
+&lt;p&gt;仓库模式应运而生。&lt;/p&gt;
+&lt;h3 id="仓库模式"&gt;仓库模式&lt;/h3&gt;
+&lt;p&gt;仓库模式（Repository Pattern）是一种用于组织数据访问的设计方式。&lt;/p&gt;
+&lt;p&gt;它在业务逻辑和数据存储之间引入一层抽象，通过接口对外提供统一的数据操作能力，
+而具体的数据存储实现被隐藏在接口之后。&lt;/p&gt;
+&lt;p&gt;在 Go 服务中，其结构与依赖关系如下：&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt; ┌────────────┐
+│ Handler │
+└─────┬──────┘
+│
+▼
+┌────────────┐
+│ Service │
+└─────┬──────┘
+│ depends on
+▼
+┌──────────────────────────────┐
+│ Repository (Interface) │
+└───────────┬──────────────────┘
+▲
+│ implements
+┌──────────────┴──────────────┬──────────────┬──────────────┐
+│ MySQL Repo │ Redis Repo │ API Repo │
+└──────────────┬──────────────┴──────┬───────┴──────────────┘
+│ │
+▼ ▼
+┌────────┐ ┌────────┐
+│ MySQL │ │ Redis │
+└────────┘ └────────┘
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;从上到下各层有不同的职责划分：&lt;/p&gt;</description></item><item><title>如何优雅禁用select分支</title><link>https://sunzhanyi.github.io/post/%E5%A6%82%E4%BD%95%E4%BC%98%E9%9B%85%E7%A6%81%E7%94%A8select%E5%88%86%E6%94%AF/</link><pubDate>Sun, 26 Apr 2026 22:56:18 +0800</pubDate><guid>https://sunzhanyi.github.io/post/%E5%A6%82%E4%BD%95%E4%BC%98%E9%9B%85%E7%A6%81%E7%94%A8select%E5%88%86%E6%94%AF/</guid><description>&lt;p&gt;Go语言并发中，select语句像一个通信指挥官能够协调多个通道（channel）的通信，它同时监听多个通道，一旦某个通道有数据就绪，就立刻执行对应的操作。&lt;/p&gt;
+&lt;p&gt;但实际工程中，可能需要按照具体情况来控制某个 channel 是否参与调度，禁用掉不再需要的通道，从而让它不再参与 select 的调用。&lt;/p&gt;
+&lt;p&gt;碰到禁用/启用某个功能或模块，就直觉的想到通过增加变量，或者 if 判断来解决。但控制 channel 的调用，Go 语言提供了一个优雅且地道的原生解决方法：nil channel。&lt;/p&gt;
+&lt;p&gt;今天，我们就来看看，如何利用 nil channel 来实现 select 分支的优雅启停。&lt;/p&gt;
+&lt;h4 id="nil-channel"&gt;Nil Channel&lt;/h4&gt;
+&lt;p&gt;Go 语言中，通过 var 或者 make 来声明 channel&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"&gt;&lt;code class="language-go" data-lang="go"&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="color:#66d9ef"&gt;var&lt;/span&gt; &lt;span style="color:#a6e22e"&gt;ch&lt;/span&gt; &lt;span style="color:#66d9ef"&gt;chan&lt;/span&gt; &lt;span style="color:#66d9ef"&gt;int&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;p&gt;或&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"&gt;&lt;code class="language-go" data-lang="go"&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; &lt;span style="color:#a6e22e"&gt;ch&lt;/span&gt; &lt;span style="color:#f92672"&gt;:=&lt;/span&gt; make(&lt;span style="color:#66d9ef"&gt;chan&lt;/span&gt; &lt;span style="color:#66d9ef"&gt;int&lt;/span&gt;)
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;p&gt;区别在于得到的 channel 值不同。通过 var 声明的 channel 值为 nil，也就是Nil channel。&lt;/p&gt;
+&lt;p&gt;对一个Nil channel 进行操作，会发生什么呢？&lt;/p&gt;
+&lt;p&gt;给定一个 Nil channel：&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;&amp;lt;- ch 永久阻塞当前 Goroutine&lt;/li&gt;
+&lt;li&gt;ch &amp;lt;- v 永久阻塞当前 Goroutine&lt;/li&gt;
+&lt;li&gt;close(ch) close 引发 panic&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;其实，读写一个 Nil channel 还可能会引起死锁。&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"&gt;&lt;code class="language-go" data-lang="go"&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="color:#66d9ef"&gt;func&lt;/span&gt; &lt;span style="color:#a6e22e"&gt;main&lt;/span&gt;() {
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; &lt;span style="color:#66d9ef"&gt;var&lt;/span&gt; &lt;span style="color:#a6e22e"&gt;ch&lt;/span&gt; &lt;span style="color:#66d9ef"&gt;chan&lt;/span&gt; &lt;span style="color:#66d9ef"&gt;int&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; &lt;span style="color:#75715e"&gt;// 读数据阻塞&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; &lt;span style="color:#66d9ef"&gt;for&lt;/span&gt; &lt;span style="color:#a6e22e"&gt;v&lt;/span&gt; &lt;span style="color:#f92672"&gt;:=&lt;/span&gt; &lt;span style="color:#66d9ef"&gt;range&lt;/span&gt; &lt;span style="color:#a6e22e"&gt;ch&lt;/span&gt; {
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; &lt;span style="color:#a6e22e"&gt;fmt&lt;/span&gt;.&lt;span style="color:#a6e22e"&gt;Println&lt;/span&gt;(&lt;span style="color:#e6db74"&gt;&amp;#34;output value:&amp;#34;&lt;/span&gt;, &lt;span style="color:#a6e22e"&gt;v&lt;/span&gt;)
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; }
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;}
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;p&gt;运行上面代码&lt;/p&gt;</description></item></channel></rss>
