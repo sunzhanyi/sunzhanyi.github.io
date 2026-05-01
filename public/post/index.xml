@@ -13,7 +13,46 @@
       <link>http://localhost:1313/post/%E4%B8%BA%E4%BB%80%E4%B9%88%E4%BD%A0%E7%9A%84go%E6%9C%8D%E5%8A%A1%E9%9C%80%E8%A6%81%E4%BB%93%E5%BA%93%E6%A8%A1%E5%BC%8F/</link>
       <pubDate>Sun, 26 Apr 2026 23:00:15 +0800</pubDate>
       <guid>http://localhost:1313/post/%E4%B8%BA%E4%BB%80%E4%B9%88%E4%BD%A0%E7%9A%84go%E6%9C%8D%E5%8A%A1%E9%9C%80%E8%A6%81%E4%BB%93%E5%BA%93%E6%A8%A1%E5%BC%8F/</guid>
-      <description>&lt;p&gt;现在开始第二篇写作，你准备好了吗？&lt;/p&gt;</description>
+      <description>&lt;p&gt;在刚开始学习写 Go 服务的时候，把数据库的操作经常写在 handler 和 service 中。&lt;/p&gt;
+&lt;p&gt;起初，没觉得这种方式有什么问题而且效率还很高。随着业务和需求不断的增加，代码开始出现了各种问题：&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;单元测试如同水中月镜中花很难在项目中落地&lt;/li&gt;
+&lt;li&gt;业务逻辑和数据访问混在一起，被技术实现细节淹没&lt;/li&gt;
+&lt;li&gt;修改一个功能需要调整多个地方&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;出现这些问题的根本原因：业务逻辑和数据访问之间的边界不够清晰，导致数据访问这种变化在业务实现中随意扩散，系统也慢慢的走向了失控的边缘。&lt;/p&gt;
+&lt;p&gt;面对即将失控系统，有没有一种方式可以控制数据访问随意扩散，将这种变动限制在某一个范围内呢？&lt;/p&gt;
+&lt;p&gt;仓库模式应运而生。&lt;/p&gt;
+&lt;h3 id=&#34;仓库模式&#34;&gt;仓库模式&lt;/h3&gt;
+&lt;p&gt;仓库模式（Repository Pattern）是一种用于组织数据访问的设计方式。&lt;/p&gt;
+&lt;p&gt;它在业务逻辑和数据存储之间引入一层抽象，通过接口对外提供统一的数据操作能力，
+而具体的数据存储实现被隐藏在接口之后。&lt;/p&gt;
+&lt;p&gt;在 Go 服务中，其结构与依赖关系如下：&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;            ┌────────────┐
+            │  Handler   │
+            └─────┬──────┘
+                  │
+                  ▼
+            ┌────────────┐
+            │  Service   │
+            └─────┬──────┘
+                  │  depends on
+                  ▼
+    ┌──────────────────────────────┐
+    │   Repository (Interface)     │
+    └───────────┬──────────────────┘
+                ▲
+                │ implements
+ ┌──────────────┴──────────────┬──────────────┬──────────────┐
+ │        MySQL Repo           │   Redis Repo │   API Repo   │
+ └──────────────┬──────────────┴──────┬───────┴──────────────┘
+                │                     │
+                ▼                     ▼
+           ┌────────┐           ┌────────┐
+           │ MySQL  │           │ Redis  │
+           └────────┘           └────────┘
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;从上到下各层有不同的职责划分：&lt;/p&gt;</description>
     </item>
     <item>
       <title>如何优雅禁用select分支</title>
