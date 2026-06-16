@@ -1,0 +1,427 @@
+<!DOCTYPE html>
+        <html>
+        <head>
+            <meta charset="UTF-8">
+            <title>&#x4ed3;&#x5e93;&#x6a21;&#x5f0f;</title>
+            <style>
+/* From extension vscode.github */
+/*---------------------------------------------------------------------------------------------
+ *  Copyright (c) Microsoft Corporation. All rights reserved.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
+ *--------------------------------------------------------------------------------------------*/
+
+.vscode-dark img[src$=\#gh-light-mode-only],
+.vscode-light img[src$=\#gh-dark-mode-only],
+.vscode-high-contrast:not(.vscode-high-contrast-light) img[src$=\#gh-light-mode-only],
+.vscode-high-contrast-light img[src$=\#gh-dark-mode-only] {
+	display: none;
+}
+
+/* From extension bierner.markdown-prism */
+
+/* From extension davidmwhynot.markdown-higlightjs */
+/*
+
+Atom One Dark by Daniel Gamage
+Original One Dark Syntax theme from https://github.com/atom/one-dark-syntax
+
+base:    #282c34
+mono-1:  #abb2bf
+mono-2:  #818896
+mono-3:  #5c6370
+hue-1:   #56b6c2
+hue-2:   #61aeee
+hue-3:   #c678dd
+hue-4:   #98c379
+hue-5:   #e06c75
+hue-5-2: #be5046
+hue-6:   #d19a66
+hue-6-2: #e6c07b
+
+*/
+
+.hljs {
+  display: block;
+  overflow-x: auto;
+  padding: 0.5em;
+  color: #abb2bf;
+  background: #282c34;
+}
+
+.hljs-comment,
+.hljs-quote {
+  color: #5c6370;
+  font-style: italic;
+}
+
+.hljs-doctag,
+.hljs-keyword,
+.hljs-formula {
+  color: #c678dd;
+}
+
+.hljs-section,
+.hljs-name,
+.hljs-selector-tag,
+.hljs-deletion,
+.hljs-subst {
+  color: #e06c75;
+}
+
+.hljs-literal {
+  color: #56b6c2;
+}
+
+.hljs-string,
+.hljs-regexp,
+.hljs-addition,
+.hljs-attribute,
+.hljs-meta-string {
+  color: #98c379;
+}
+
+.hljs-built_in,
+.hljs-class .hljs-title {
+  color: #e6c07b;
+}
+
+.hljs-attr,
+.hljs-variable,
+.hljs-template-variable,
+.hljs-type,
+.hljs-selector-class,
+.hljs-selector-attr,
+.hljs-selector-pseudo,
+.hljs-number {
+  color: #d19a66;
+}
+
+.hljs-symbol,
+.hljs-bullet,
+.hljs-link,
+.hljs-meta,
+.hljs-selector-id,
+.hljs-title {
+  color: #61aeee;
+}
+
+.hljs-emphasis {
+  font-style: italic;
+}
+
+.hljs-strong {
+  font-weight: bold;
+}
+
+.hljs-link {
+  text-decoration: underline;
+}
+
+</style>
+            
+        <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/Microsoft/vscode/extensions/markdown-language-features/media/markdown.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/Microsoft/vscode/extensions/markdown-language-features/media/highlight.css">
+<style>
+            body {
+                font-family: -apple-system, BlinkMacSystemFont, 'Segoe WPC', 'Segoe UI', system-ui, 'Ubuntu', 'Droid Sans', sans-serif;
+                font-size: 14px;
+                line-height: 1.6;
+            }
+        </style>
+        <style>
+.task-list-item {
+    list-style-type: none;
+}
+
+.task-list-item-checkbox {
+    margin-left: -20px;
+    vertical-align: middle;
+    pointer-events: none;
+}
+</style>
+<style>
+:root {
+  --color-note: #0969da;
+  --color-tip: #1a7f37;
+  --color-warning: #9a6700;
+  --color-severe: #bc4c00;
+  --color-caution: #d1242f;
+  --color-important: #8250df;
+}
+
+</style>
+<style>
+@media (prefers-color-scheme: dark) {
+  :root {
+    --color-note: #2f81f7;
+    --color-tip: #3fb950;
+    --color-warning: #d29922;
+    --color-severe: #db6d28;
+    --color-caution: #f85149;
+    --color-important: #a371f7;
+  }
+}
+
+</style>
+<style>
+.markdown-alert {
+  padding: 0.5rem 1rem;
+  margin-bottom: 16px;
+  color: inherit;
+  border-left: .25em solid #888;
+}
+
+.markdown-alert>:first-child {
+  margin-top: 0
+}
+
+.markdown-alert>:last-child {
+  margin-bottom: 0
+}
+
+.markdown-alert .markdown-alert-title {
+  display: flex;
+  font-weight: 500;
+  align-items: center;
+  line-height: 1
+}
+
+.markdown-alert .markdown-alert-title .octicon {
+  margin-right: 0.5rem;
+  display: inline-block;
+  overflow: visible !important;
+  vertical-align: text-bottom;
+  fill: currentColor;
+}
+
+.markdown-alert.markdown-alert-note {
+  border-left-color: var(--color-note);
+}
+
+.markdown-alert.markdown-alert-note .markdown-alert-title {
+  color: var(--color-note);
+}
+
+.markdown-alert.markdown-alert-important {
+  border-left-color: var(--color-important);
+}
+
+.markdown-alert.markdown-alert-important .markdown-alert-title {
+  color: var(--color-important);
+}
+
+.markdown-alert.markdown-alert-warning {
+  border-left-color: var(--color-warning);
+}
+
+.markdown-alert.markdown-alert-warning .markdown-alert-title {
+  color: var(--color-warning);
+}
+
+.markdown-alert.markdown-alert-tip {
+  border-left-color: var(--color-tip);
+}
+
+.markdown-alert.markdown-alert-tip .markdown-alert-title {
+  color: var(--color-tip);
+}
+
+.markdown-alert.markdown-alert-caution {
+  border-left-color: var(--color-caution);
+}
+
+.markdown-alert.markdown-alert-caution .markdown-alert-title {
+  color: var(--color-caution);
+}
+
+</style>
+        
+        </head>
+        <body class="vscode-body vscode-dark">
+            <style>@import url('vscode-resource:/Users/s7i/.vscode/extensions/bierner.markdown-prism-0.0.5/node_modules/prismjs/themes/prism-tomorrow.css')</style><p>+++
+date = '2026-04-26T23:00:15+08:00'
+draft = false
+title = '为什么你的Go服务需要仓库模式'
++++</p>
+<p>在刚开始学习写 Go 服务的时候，把数据库的操作经常写在 handler 和 service 中。</p>
+<p>起初，没觉得这种方式有什么问题而且效率还很高。随着业务和需求不断的增加，代码开始出现了各种问题：</p>
+<ul>
+<li>单元测试如同水中月镜中花很难在项目中落地</li>
+<li>业务逻辑和数据访问混在一起，被技术实现细节淹没</li>
+<li>修改一个功能需要调整多个地方</li>
+</ul>
+<p>出现这些问题的根本原因：业务逻辑和数据访问之间的边界不够清晰，导致数据访问这种变化在业务实现中随意扩散，系统也慢慢的走向了失控的边缘。</p>
+<p>面对即将失控系统，有没有一种方式可以控制数据访问随意扩散，将这种变动限制在某一个范围内呢？</p>
+<p>仓库模式应运而生。</p>
+<h3 id="仓库模式">仓库模式</h3>
+<p>仓库模式（Repository Pattern）是一种用于组织数据访问的设计方式。</p>
+<p>它在业务逻辑和数据存储之间引入一层抽象，通过接口对外提供统一的数据操作能力，
+而具体的数据存储实现被隐藏在接口之后。</p>
+<p>在 Go 服务中，其结构与依赖关系如下：</p>
+<pre><code class="hljs">            ┌────────────┐
+            │  Handler   │
+            └─────┬──────┘
+                  │
+                  ▼
+            ┌────────────┐
+            │  Service   │
+            └─────┬──────┘
+                  │  depends on
+                  ▼
+    ┌──────────────────────────────┐
+    │   Repository (Interface)     │
+    └───────────┬──────────────────┘
+                ▲
+                │ implements
+ ┌──────────────┴──────────────┬──────────────┬──────────────┐
+ │        MySQL Repo           │   Redis Repo │   API Repo   │
+ └──────────────┬──────────────┴──────┬───────┴──────────────┘
+                │                     │
+                ▼                     ▼
+           ┌────────┐           ┌────────┐
+           │ MySQL  │           │ Redis  │
+           └────────┘           └────────┘
+</code></pre>
+<p>从上到下各层有不同的职责划分：</p>
+<ul>
+<li>Handler 负责处理请求</li>
+<li>Service 负责业务逻辑</li>
+<li>Repository 接口定义数据访问能力</li>
+<li>Repository 实现负责具体的数据存取（如 MySQL、Redis 或第三方 API）</li>
+</ul>
+<p>各层依赖关系：</p>
+<ul>
+<li>Service 依赖的是 Repository 接口，而不是具体实现</li>
+<li>Repository 的具体实现依赖底层数据源</li>
+<li>整体依赖方向自上而下，具体实现被限制在最底层</li>
+</ul>
+<p>可以看出，通过引入Repository (Interface) 层，业务领域和技术实现之间有了清晰的边界，数据访问被限制在了最底层。</p>
+<p>在 Go 中，通过使用结构体和接口来实现这种模式。</p>
+<h3 id="反面例子">反面例子</h3>
+<p>在刚开始写 Go 或者接手一些老代码，经常会把所有的代码都放在一个函数里，业务领域和技术实现堆在一起，缺乏结构设计。</p>
+<pre><code class="hljs language-go"><span class="hljs-function"><span class="hljs-keyword">func</span> <span class="hljs-title">CreateUserHandler</span><span class="hljs-params">(c *gin.Context)</span></span> {
+	db, _ := sql.Open(<span class="hljs-string">"mysql"</span>, <span class="hljs-string">"user:password@tcp(127.0.0.1:3306)/testdb?parseTime=true"</span>)
+
+	name := c.PostForm(<span class="hljs-string">"name"</span>)
+
+	<span class="hljs-keyword">if</span> name == <span class="hljs-string">""</span> {
+		c.String(<span class="hljs-number">400</span>, <span class="hljs-string">"name required"</span>)
+		<span class="hljs-keyword">return</span>
+	}
+
+	_, err := db.Exec(<span class="hljs-string">"INSERT INTO users(name) VALUES(?)"</span>, name)
+	<span class="hljs-keyword">if</span> err != <span class="hljs-literal">nil</span> {
+		c.String(<span class="hljs-number">500</span>, <span class="hljs-string">"db error"</span>)
+		<span class="hljs-keyword">return</span>
+	}
+
+	c.String(<span class="hljs-number">200</span>, <span class="hljs-string">"user created"</span>)
+}
+</code></pre>
+<p>这段代码，在 Handler 中实现了所有任务：参数接收，领域逻辑处理，数据访问。</p>
+<h3 id="仓库模式实现">仓库模式实现</h3>
+<p>在仓库模式中，把上面的代码分为不同层来设计：</p>
+<p>Handler → Service → Repository(interface) → MySQL Repo → DB</p>
+<h4 id="领域模型对象">领域模型对象</h4>
+<pre><code class="hljs language-go"><span class="hljs-comment">// 注意：领域模型对象只在各层之间传递，是业务中的数据，不属于任何一个层</span>
+<span class="hljs-keyword">type</span> User <span class="hljs-keyword">struct</span> {
+	ID   <span class="hljs-keyword">int64</span>
+	Name <span class="hljs-keyword">string</span>
+}
+</code></pre>
+<h4 id="mysql-repo-数据访问">MySQL Repo （数据访问）</h4>
+<pre><code class="hljs language-go"><span class="hljs-keyword">type</span> userRepo <span class="hljs-keyword">struct</span> {
+	db *sql.DB
+}
+
+<span class="hljs-function"><span class="hljs-keyword">func</span> <span class="hljs-title">NewUserRepo</span><span class="hljs-params">(db *sql.DB)</span> <span class="hljs-title">UserRepository</span></span> {
+	<span class="hljs-keyword">return</span> &amp;userRepo{db: db}
+}
+
+<span class="hljs-function"><span class="hljs-keyword">func</span> <span class="hljs-params">(r *userRepo)</span> <span class="hljs-title">Create</span><span class="hljs-params">(ctx context.Context, user *User)</span> <span class="hljs-title">error</span></span> {
+	res, err := r.db.ExecContext(ctx,
+		<span class="hljs-string">"INSERT INTO users(name) VALUES(?)"</span>, user.Name)
+	<span class="hljs-keyword">if</span> err != <span class="hljs-literal">nil</span> {
+		<span class="hljs-keyword">return</span> err
+	}
+
+	id, err := res.LastInsertId()
+	<span class="hljs-keyword">if</span> err == <span class="hljs-literal">nil</span> {
+		user.ID = id
+	}
+
+	<span class="hljs-keyword">return</span> <span class="hljs-literal">nil</span>
+}
+</code></pre>
+<p>这层只负责执行 SQL 语句，把领域对象写入数据库。</p>
+<h4 id="repository-interface">Repository (interface)</h4>
+<pre><code class="hljs language-go"><span class="hljs-keyword">type</span> UserRepository <span class="hljs-keyword">interface</span> {
+	Create(ctx context.Context, user *User) error
+}
+</code></pre>
+<p>这层是实现仓库模式关键。通过 Go 语言中的 interface 特性，在 Repo 和 Service 之间增加了一层，让 Service 层依赖一个抽象而不是具体的数据访问实现。</p>
+<h4 id="service-层业务逻辑">Service 层（业务逻辑）</h4>
+<pre><code class="hljs language-go"><span class="hljs-keyword">type</span> UserService <span class="hljs-keyword">struct</span> {
+	repo UserRepository
+}
+
+<span class="hljs-function"><span class="hljs-keyword">func</span> <span class="hljs-title">NewUserService</span><span class="hljs-params">(repo UserRepository)</span> *<span class="hljs-title">UserService</span></span> {
+	<span class="hljs-keyword">return</span> &amp;UserService{repo: repo}
+}
+
+<span class="hljs-function"><span class="hljs-keyword">func</span> <span class="hljs-params">(s *UserService)</span> <span class="hljs-title">CreateUser</span><span class="hljs-params">(ctx context.Context, name <span class="hljs-keyword">string</span>)</span> <span class="hljs-title">error</span></span> {
+	<span class="hljs-keyword">if</span> name == <span class="hljs-string">""</span> {
+		<span class="hljs-keyword">return</span> errors.New(<span class="hljs-string">"name required"</span>)
+	}
+
+	user := &amp;User{Name: name}
+
+	<span class="hljs-keyword">return</span> s.repo.Create(ctx, user)
+}
+</code></pre>
+<p>这层的边界边界变得更加清晰，职责更加单一。负责领域对象的参数校验和调用数据访问层保存数据。</p>
+<h4 id="handler-gin">Handler (Gin)</h4>
+<pre><code class="hljs language-go"><span class="hljs-keyword">type</span> Handler <span class="hljs-keyword">struct</span> {
+	service *UserService
+}
+
+<span class="hljs-function"><span class="hljs-keyword">func</span> <span class="hljs-title">NewHandler</span><span class="hljs-params">(service *UserService)</span> *<span class="hljs-title">Handler</span></span> {
+	<span class="hljs-keyword">return</span> &amp;Handler{service: service}
+}
+
+<span class="hljs-function"><span class="hljs-keyword">func</span> <span class="hljs-params">(h *Handler)</span> <span class="hljs-title">CreateUser</span><span class="hljs-params">(c *gin.Context)</span></span> {
+	name := c.PostForm(<span class="hljs-string">"name"</span>)
+
+	err := h.service.CreateUser(c.Request.Context(), name)
+	<span class="hljs-keyword">if</span> err != <span class="hljs-literal">nil</span> {
+		c.String(<span class="hljs-number">400</span>, err.Error())
+		<span class="hljs-keyword">return</span>
+	}
+
+	c.String(<span class="hljs-number">200</span>, <span class="hljs-string">"user created"</span>)
+}
+</code></pre>
+<p>Handler 层也显得更清晰和简单了。它只接受来自网络层中参数，然后调用 Service 层处理，最后返回结果。</p>
+<h3 id="总结">总结</h3>
+<p>仓库模式是一种有用代码组织方式，本质上是通过在业务领域层和数据访问层之间增加一个抽象层，控制变化。</p>
+<p>让原本在业务逻辑和数据访问之间互相渗透的混乱访问方式更加清晰，便于测试。</p>
+<p>因此，在项目中，开始发现：</p>
+<ul>
+<li>测试难以落地</li>
+<li>业务逻辑和 SQL 混杂</li>
+<li>一个修改牵一发动全身</li>
+</ul>
+<p>那么，也就意味着<strong>是时候引入清晰的边界了</strong>。</p>
+<!-- 同时，实现仓库模式需要提前做一些设计，从代码量来看，仓库模式要写更多的代码。因此在什么时候决定使用它也是一个需要考虑的问题。
+
+有一个基本 
+
+为什么你的 Go 服务需要仓库模式：从“代码混乱”到“变化可控”
+
+参考:https://pawelgrzybek.com/repository-pattern-in-go-service/
+-->
+
+            
+            
+        </body>
+        </html>

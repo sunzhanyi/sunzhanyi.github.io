@@ -209,6 +209,8 @@ Handler 层也显得更清晰和简单了。它只接受来自网络层中参数
 有一个基本 
 
 为什么你的 Go 服务需要仓库模式：从“代码混乱”到“变化可控”
+
+参考:https://pawelgrzybek.com/repository-pattern-in-go-service/
 -->
 
 
