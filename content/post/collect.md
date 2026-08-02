@@ -7,3 +7,21 @@ title = 'Collect'
 ##### 参看链接
 
 https://rednafi.com/go/app-structure/
+
+https://www.campoy.cat/blog/justforfunc-26-nil-chans/
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

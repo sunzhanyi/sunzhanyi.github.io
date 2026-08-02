@@ -1,0 +1,412 @@
+<!DOCTYPE html>
+        <html>
+        <head>
+            <meta charset="UTF-8">
+            <title>gRPC -&gt; HTTP -&gt; TCP &#x4e09;&#x5c42;&#x8d85;&#x65f6;&#x6392;&#x67e5;&#x5b9e;&#x5f55;</title>
+            <style>
+/* From extension vscode.github */
+/*---------------------------------------------------------------------------------------------
+ *  Copyright (c) Microsoft Corporation. All rights reserved.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
+ *--------------------------------------------------------------------------------------------*/
+
+.vscode-dark img[src$=\#gh-light-mode-only],
+.vscode-light img[src$=\#gh-dark-mode-only],
+.vscode-high-contrast:not(.vscode-high-contrast-light) img[src$=\#gh-light-mode-only],
+.vscode-high-contrast-light img[src$=\#gh-dark-mode-only] {
+	display: none;
+}
+
+/* From extension bierner.markdown-prism */
+
+/* From extension davidmwhynot.markdown-higlightjs */
+/*
+
+Atom One Dark by Daniel Gamage
+Original One Dark Syntax theme from https://github.com/atom/one-dark-syntax
+
+base:    #282c34
+mono-1:  #abb2bf
+mono-2:  #818896
+mono-3:  #5c6370
+hue-1:   #56b6c2
+hue-2:   #61aeee
+hue-3:   #c678dd
+hue-4:   #98c379
+hue-5:   #e06c75
+hue-5-2: #be5046
+hue-6:   #d19a66
+hue-6-2: #e6c07b
+
+*/
+
+.hljs {
+  display: block;
+  overflow-x: auto;
+  padding: 0.5em;
+  color: #abb2bf;
+  background: #282c34;
+}
+
+.hljs-comment,
+.hljs-quote {
+  color: #5c6370;
+  font-style: italic;
+}
+
+.hljs-doctag,
+.hljs-keyword,
+.hljs-formula {
+  color: #c678dd;
+}
+
+.hljs-section,
+.hljs-name,
+.hljs-selector-tag,
+.hljs-deletion,
+.hljs-subst {
+  color: #e06c75;
+}
+
+.hljs-literal {
+  color: #56b6c2;
+}
+
+.hljs-string,
+.hljs-regexp,
+.hljs-addition,
+.hljs-attribute,
+.hljs-meta-string {
+  color: #98c379;
+}
+
+.hljs-built_in,
+.hljs-class .hljs-title {
+  color: #e6c07b;
+}
+
+.hljs-attr,
+.hljs-variable,
+.hljs-template-variable,
+.hljs-type,
+.hljs-selector-class,
+.hljs-selector-attr,
+.hljs-selector-pseudo,
+.hljs-number {
+  color: #d19a66;
+}
+
+.hljs-symbol,
+.hljs-bullet,
+.hljs-link,
+.hljs-meta,
+.hljs-selector-id,
+.hljs-title {
+  color: #61aeee;
+}
+
+.hljs-emphasis {
+  font-style: italic;
+}
+
+.hljs-strong {
+  font-weight: bold;
+}
+
+.hljs-link {
+  text-decoration: underline;
+}
+
+</style>
+            
+        <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/Microsoft/vscode/extensions/markdown-language-features/media/markdown.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/Microsoft/vscode/extensions/markdown-language-features/media/highlight.css">
+<style>
+            body {
+                font-family: -apple-system, BlinkMacSystemFont, 'Segoe WPC', 'Segoe UI', system-ui, 'Ubuntu', 'Droid Sans', sans-serif;
+                font-size: 14px;
+                line-height: 1.6;
+            }
+        </style>
+        <style>
+.task-list-item {
+    list-style-type: none;
+}
+
+.task-list-item-checkbox {
+    margin-left: -20px;
+    vertical-align: middle;
+    pointer-events: none;
+}
+</style>
+<style>
+:root {
+  --color-note: #0969da;
+  --color-tip: #1a7f37;
+  --color-warning: #9a6700;
+  --color-severe: #bc4c00;
+  --color-caution: #d1242f;
+  --color-important: #8250df;
+}
+
+</style>
+<style>
+@media (prefers-color-scheme: dark) {
+  :root {
+    --color-note: #2f81f7;
+    --color-tip: #3fb950;
+    --color-warning: #d29922;
+    --color-severe: #db6d28;
+    --color-caution: #f85149;
+    --color-important: #a371f7;
+  }
+}
+
+</style>
+<style>
+.markdown-alert {
+  padding: 0.5rem 1rem;
+  margin-bottom: 16px;
+  color: inherit;
+  border-left: .25em solid #888;
+}
+
+.markdown-alert>:first-child {
+  margin-top: 0
+}
+
+.markdown-alert>:last-child {
+  margin-bottom: 0
+}
+
+.markdown-alert .markdown-alert-title {
+  display: flex;
+  font-weight: 500;
+  align-items: center;
+  line-height: 1
+}
+
+.markdown-alert .markdown-alert-title .octicon {
+  margin-right: 0.5rem;
+  display: inline-block;
+  overflow: visible !important;
+  vertical-align: text-bottom;
+  fill: currentColor;
+}
+
+.markdown-alert.markdown-alert-note {
+  border-left-color: var(--color-note);
+}
+
+.markdown-alert.markdown-alert-note .markdown-alert-title {
+  color: var(--color-note);
+}
+
+.markdown-alert.markdown-alert-important {
+  border-left-color: var(--color-important);
+}
+
+.markdown-alert.markdown-alert-important .markdown-alert-title {
+  color: var(--color-important);
+}
+
+.markdown-alert.markdown-alert-warning {
+  border-left-color: var(--color-warning);
+}
+
+.markdown-alert.markdown-alert-warning .markdown-alert-title {
+  color: var(--color-warning);
+}
+
+.markdown-alert.markdown-alert-tip {
+  border-left-color: var(--color-tip);
+}
+
+.markdown-alert.markdown-alert-tip .markdown-alert-title {
+  color: var(--color-tip);
+}
+
+.markdown-alert.markdown-alert-caution {
+  border-left-color: var(--color-caution);
+}
+
+.markdown-alert.markdown-alert-caution .markdown-alert-title {
+  color: var(--color-caution);
+}
+
+</style>
+        
+        </head>
+        <body class="vscode-body vscode-dark">
+            <style>@import url('vscode-resource:/Users/s7i/.vscode/extensions/bierner.markdown-prism-0.0.5/node_modules/prismjs/themes/prism-tomorrow.css')</style><p>+++
+date = '2026-07-08T21:27:24+08:00'
+draft = true
+title = '003'
++++</p>
+<h1 id="grpc---http---tcp-三层超时排查实录">gRPC -&gt; HTTP -&gt; TCP 三层超时排查实录</h1>
+<h2 id="1-问题背景">1. 问题背景</h2>
+<p>一次和风天气气压接口调用出现偶发错误：</p>
+<pre><code class="hljs language-text">Get &quot;https://xiaomi-hope-api.qweather.net/v7/grid-weather/24h?lang=zh-hans&amp;location=80.65%2C16.41&amp;unit=m&quot;: dial tcp 172.104.38.93:443: i/o timeout
+</code></pre>
+<p>现象有几个关键点：</p>
+<ul>
+<li>调用失败概率不高，说明网络整体是通的，不是完全不可达。</li>
+<li>变更点主要是 fallback 域名对应的 IP 从旧节点切到了新节点。</li>
+<li>旧 IP <code>172.104.37.202</code> 也有失败，但新 IP <code>172.104.38.93</code> 在高峰期失败率约为旧 IP 的两倍。</li>
+<li>单次失败请求的整体耗时只有约 <code>510ms</code>，不是常见的 <code>5s</code> 或 <code>30s</code> 超时。</li>
+</ul>
+<p>日志时间线：</p>
+<pre><code class="hljs language-text">10:19:33.110 hefeng cache miss，准备请求和风
+10:19:33.110 domain 从 https://nn7fby8wfm.yun.qweatherapi.com 切换到 https://xiaomi-hope-api.qweather.net
+10:19:33.110 创建 flowtoken：ft-https://xiaomi-hope-api.qweather.net
+10:19:33.612 HTTP 请求报错：dial tcp 172.104.38.93:443: i/o timeout
+10:19:33.612 SESSION 日志：cost=510ms，domain=https://xiaomi-hope-api.qweather.net:500
+</code></pre>
+<p>从时间线看，真正触发的是约 <code>500ms</code> 的连接阶段超时，而不是业务整体超时。</p>
+<h2 id="2-当前调用链路">2. 当前调用链路</h2>
+<p>接口链路可以抽象为：</p>
+<pre><code class="hljs language-text">gRPC client
+ |
+ | gRPC deadline / timeout
+ v
+hlth-weather-server gRPC handler
+ |
+ | handler -&gt; model -&gt; service
+ v
+callHeFeng
+ |
+ | HTTP client timeout
+ v
+commonhttpclient
+ |
+ | transportpool dial timeout
+ v
+TCP connect to qweather IP
+</code></pre>
+<p>相关业务代码位置：</p>
+<ul>
+<li>gRPC handler：<code>server/handler.go:62</code></li>
+<li>model 调用 service：<code>lib/model/weather_model.go:261</code></li>
+<li>service 读取缓存、加锁、请求和风：<code>lib/service/weather_service_v3.go:848</code></li>
+<li>发起和风 HTTP 请求：<code>lib/service/weather_service_v3.go:984</code></li>
+<li>生成请求 path：<code>lib/service/weather_generate_reqpath.go:131</code></li>
+<li>fallback domain 读取：<code>lib/service/weather_service_v3.go:1054</code></li>
+</ul>
+<h2 id="3-三层超时设置">3. 三层超时设置</h2>
+<h3 id="31-grpc-客户端超时">3.1 gRPC 客户端超时</h3>
+<p>gRPC 超时是客户端侧的 deadline。当前项目作为 server，不在本仓库中直接设置调用方的 deadline，但框架默认客户端超时可以在依赖中看到：</p>
+<pre><code class="hljs language-go"><span class="hljs-comment">// grpcresolving@v0.12.2/resolving.go</span>
+<span class="hljs-function"><span class="hljs-keyword">func</span> <span class="hljs-title">DefaultClient</span><span class="hljs-params">(...)</span> <span class="hljs-params">(*grpc.ClientConn, error)</span></span> {
+ <span class="hljs-keyword">return</span> DefaultClientTimeout(..., <span class="hljs-number">1</span>*time.Second)
+}
+</code></pre>
+<p>实际超时拦截器逻辑：</p>
+<pre><code class="hljs language-go"><span class="hljs-comment">// grpcresolving@v0.12.2/interceptor/timeout.go</span>
+<span class="hljs-keyword">if</span> _, ok := ctx.Deadline(); !ok {
+ ctx, cancel = context.WithTimeout(ctx, defaulttimeout)
+ <span class="hljs-keyword">defer</span> cancel()
+}
+</code></pre>
+<p>这层超时控制的是一次 RPC 从客户端视角最多等待多久。它不等同于服务端内部 HTTP 请求的 dial timeout。</p>
+<p>本次日志里 SESSION 正常打印，整体耗时 <code>510ms</code>，说明这次请求没有被 gRPC <code>1s</code> deadline 提前打断。</p>
+<h3 id="32-http-client-整体超时">3.2 HTTP Client 整体超时</h3>
+<p>和风请求处设置了 HTTP client 的整体超时：</p>
+<pre><code class="hljs language-go"><span class="hljs-comment">// lib/service/weather_service_v3.go</span>
+client := &amp;commonhttpclient.HttpClient{
+ Domain: srv.getHFDomain(),
+ Timeout: time.Second * time.Duration(srv.TimeOut),
+}
+</code></pre>
+<p>默认 <code>srv.TimeOut</code> 来自：</p>
+<pre><code class="hljs language-go"><span class="hljs-comment">// lib/consts/weather_basics.go</span>
+HttpTimeOut = <span class="hljs-number">5</span>
+</code></pre>
+<p>所以这层通常是 <code>5s</code>。它覆盖 DNS、TCP connect、TLS handshake、请求发送、响应头等待、响应体读取等整体阶段。</p>
+<p>但本次日志约 <code>500ms</code> 就失败，说明不是 HTTP overall timeout 先触发。</p>
+<h3 id="33-tcp-dialtimeout">3.3 TCP DialTimeout</h3>
+<p><code>commonhttpclient</code> 底层使用 <code>transportpool</code> 创建 <code>http.Transport</code>：</p>
+<pre><code class="hljs language-go"><span class="hljs-comment">// commonhttpclient/client.go</span>
+c.client = &amp;http.Client{
+ Transport: transportpool.NewTransportPoolWithConf(c.Conf),
+ Timeout: c.Timeout,
+}
+</code></pre>
+<p><code>transportpool</code> 的默认 TCP 连接超时是 <code>500ms</code>：</p>
+<pre><code class="hljs language-go"><span class="hljs-comment">// transportpool/transport.go</span>
+dialTimeout := conf.HttpPoolDialTimeoutInMs
+<span class="hljs-keyword">if</span> dialTimeout &gt; <span class="hljs-number">0</span> {
+ tout = time.Duration(dialTimeout) * time.Millisecond
+} <span class="hljs-keyword">else</span> {
+ tout = <span class="hljs-number">500</span> * time.Millisecond
+}
+</code></pre>
+<p><code>callHeFeng</code> 没有传自定义 <code>Conf</code>，所以 <code>HttpPoolDialTimeoutInMs</code> 是零值，最终走默认 <code>500ms</code>。</p>
+<p>本次日志中的 <code>domain=...:500</code> 与 <code>dial tcp ... i/o timeout</code> 高度吻合：TCP connect 阶段约 <code>500ms</code> 没建立成功，于是返回 <code>i/o timeout</code>。</p>
+<h2 id="4-这次为什么不是简单归因于客户端配置">4. 这次为什么不是简单归因于客户端配置</h2>
+<p>排查过程中容易误判为“客户端 500ms 太短”。但结合上下文，更合理的判断是：变更后的域名/IP 节点质量变差，导致在既有工程阈值下失败率上升。</p>
+<p>理由：</p>
+<ul>
+<li><code>500ms</code> 是框架默认值，不是本次改动临时写出来的魔法数字。</li>
+<li>本服务内其他 HTTP 调用长期使用同一套 <code>commonhttpclient + transportpool</code> 机制。</li>
+<li>变更点是 fallback domain 指向的新 IP，而不是客户端超时参数。</li>
+<li>旧 IP <code>172.104.37.202</code> 也有失败，但新 IP <code>172.104.38.93</code> 失败率明显更高，说明新节点的连接建立耗时分布更差。</li>
+<li>如果客户端默认 <code>500ms</code> 本身完全不合理，问题应当更早、更广泛地在其他 HTTP 调用中暴露。</li>
+</ul>
+<p>所以结论不是“客户端写错了 500ms”，而是：</p>
+<pre><code class="hljs language-text">新 fallback IP 在高峰期更容易超过当前工程默认的 TCP connect 预算，导致 dial timeout 增多。
+</code></pre>
+<p>这更偏向服务端节点、网络路径、DNS 调度或供应商侧容量问题。</p>
+<h2 id="5-附带发现callhefeng-的-httpclient-用法特殊">5. 附带发现：callHeFeng 的 HttpClient 用法特殊</h2>
+<p>当前代码里有两类 <code>HttpClient</code> 用法。</p>
+<p>第一类是在服务启动时创建并复用：</p>
+<pre><code class="hljs language-go"><span class="hljs-comment">// lib/service/weather_service_v3.go</span>
+srv.httpClient = &amp;commonhttpclient.HttpClient{
+ Domain: weatherConf.Endpoint,
+ Timeout: time.Duration(srv.TimeOut) * time.Second,
+}
+</code></pre>
+<p>第二类是 <code>callHeFeng</code> 每次请求都创建：</p>
+<pre><code class="hljs language-go"><span class="hljs-comment">// lib/service/weather_service_v3.go</span>
+client := &amp;commonhttpclient.HttpClient{
+ Domain: srv.getHFDomain(),
+ Timeout: time.Second * time.Duration(srv.TimeOut),
+}
+</code></pre>
+<p>这会带来两个现象：</p>
+<ul>
+<li>每次请求都会创建新的 <code>FlowToken</code>，日志里能看到 <code>create flowtoken ...</code> 和 <code>[FlowToken] startup</code>。</li>
+<li>每次请求都会创建新的 transport pool，连接复用收益有限。</li>
+</ul>
+<p>这不是本次问题的唯一根因，因为旧 IP 在同样写法下失败率更低；但它会放大连接建立阶段的不稳定性。长期优化可以考虑为和风域名维护独立、可复用的 HTTP client。</p>
+<h2 id="6-复现示例">6. 复现示例</h2>
+<p>复现代码位于：</p>
+<pre><code class="hljs language-text">timeout_demo/main.go
+</code></pre>
+<p>运行方式：</p>
+<pre><code class="hljs language-bash"><span class="hljs-built_in">cd</span> /home/xiaomi/p-sunzhanyi/p-szy/go-topics/go-test-topic/timeout_demo
+go run .
+</code></pre>
+<p>如果在没有 module 的临时目录中单独复制 <code>main.go</code> 运行，也可以使用：</p>
+<pre><code class="hljs language-bash">GO111MODULE=off go run main.go
+</code></pre>
+<p>示例包含三组实验：</p>
+<ul>
+<li>只演示 <code>net.Dialer.Timeout = 500ms</code> 时，TCP connect 阶段如何先失败。</li>
+<li>演示 <code>http.Client.Timeout = 5s</code> 与底层 <code>Dialer.Timeout = 500ms</code> 同时存在时，谁先到期谁先返回。</li>
+<li>模拟 gRPC deadline 与 HTTP 调用的关系：HTTP 请求绑定上游 context 时会随 deadline 取消；不绑定 context 时则继续由 HTTP/Dial 超时控制。</li>
+</ul>
+<h2 id="7-排查结论">7. 排查结论</h2>
+<p>本次问题不是 gRPC 超时，也不是 HTTP overall timeout，而是 TCP connect 阶段触发了 <code>transportpool</code> 默认的 <code>500ms</code> dial timeout。</p>
+<p>更准确的归因是：fallback 域名切换到新 IP 后，新 IP 在高峰期 TCP 连接建立耗时分布变差，超过既有 <code>500ms</code> 工程预算的概率上升。因此失败率变高。</p>
+<p>建议后续排查方向：</p>
+<ul>
+<li>对比两个 IP 的 TCP connect 耗时分布，而不是只看平均请求耗时。</li>
+<li>联系和风/域名提供方确认 <code>172.104.38.93</code> 节点负载、路由、连接队列和 DNS 调度策略。</li>
+<li>在 Nacos 中评估是否回滚 fallback domain，或切回主域名 <code>https://nn7fby8wfm.yun.qweatherapi.com</code>。</li>
+<li>长期优化 <code>callHeFeng</code> 的 HTTP client 复用方式，降低每次请求都重新建连接池和 FlowToken 的成本。</li>
+</ul>
+
+            
+            
+        </body>
+        </html>

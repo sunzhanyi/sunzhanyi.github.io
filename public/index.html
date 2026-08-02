@@ -104,6 +104,73 @@
 
 <article class="first-entry"> 
   <header class="entry-header">
+    <h2 class="entry-hint-parent">别让环境模拟越界：单元测试中的职责与边界
+    </h2>
+  </header>
+  <div class="entry-content">
+    <p>在给项目中某个功能添加单元测试时，可能会遇到：为了验证某个业务分支，测试代码开始模拟完整运行环境，通常这种情况会让测试代码变得晦涩而且越来越难维护。
+最近在对一个 Go 项目进行重构时，就遇到了这个问题。借此机会复盘一下，看看如何通过职责分离与依赖注入，重新划清单测的边界。
+现象：被“环境模拟”绑架的单元测试 典型表现包括：
+通过修改全局变量环境 通过反射、unsafe 或类似手段修改第三方包的私有状态 为了触发某个分支，从外层 API 函数切入测试 测试失败后，难以判断是业务逻辑错误，还是环境模拟失败 例如：
+func HandleRequest(ctx context.Context, req *Request) (*Response, error) { if env.IsOverseas() { return handleOverseas(ctx, req) } return handleDomestic(ctx, req) } 代码的意图比较明确：根据不同的环境，处理不同业务。
+注意 HandleRequest 是请求入口，如果测试目标是验证 handleOverseas 的业务行为，那么测试就必须让 env.IsOverseas() 返回 true，换句话说，需要通过某种方式修改环境这个全局变量。
+于是，测试代码很容易变成：
+func TestOverseasLogic(t *testing.T) { forceSetGlobalEnv(&#34;overseas&#34;) defer restoreGlobalEnv() resp, err := HandleRequest(ctx, req) assertOverseasResponse(t, resp, err) } 这种写法看上去覆盖了目标分支逻辑，实际却把单测边界扩大到了环境路由层，甚至运行环境本身。
+职责耦合与测试边界的错位 被测对象不清晰 单测首先要明确被测对象到底是什么：
+是业务逻辑本身？ 是入口函数的环境分发逻辑？ 是环境配置是否正确？ 这三类目标对应不同测试方式。
+如果测试目标是业务逻辑，就应该直接测试业务逻辑对象；如果目标是入口分发，就应该只验证分发是否正确；如果目标是环境配置正确性，则不应放在普通单测中。
+很多问题的根源在于：测试本来想测业务逻辑，但实际从入口函数切入，导致不得不模拟环境。
+业务逻辑和路由逻辑混在同一层 当代码被组织程这样时：
+api/ handler.go // 判断环境 &#43; 调用国内/海外逻辑 overseas_logic.go // 海外业务实现 API 层同时承担了两个职责：
+判断当前环境，决定走哪个分支 实现具体业务 这种结构会让测试天然倾向于从 API 入口进入。一旦从入口进入，环境判断就会成为测试前置条件，单测就容易被迫模拟环境。
+...</p>
+  </div>
+  <footer class="entry-footer"><span title='2026-07-15 07:29:20 +0800 CST'>July 15, 2026</span></footer>
+  <a class="entry-link" aria-label="post link to 别让环境模拟越界：单元测试中的职责与边界" href="http://localhost:1313/post/%E5%88%AB%E8%AE%A9%E7%8E%AF%E5%A2%83%E6%A8%A1%E6%8B%9F%E8%B6%8A%E7%95%8C%E5%8D%95%E5%85%83%E6%B5%8B%E8%AF%95%E4%B8%AD%E7%9A%84%E8%81%8C%E8%B4%A3%E4%B8%8E%E8%BE%B9%E7%95%8C/"></a>
+</article>
+
+<article class="post-entry"> 
+  <header class="entry-header">
+    <h2 class="entry-hint-parent">003
+    </h2>
+  </header>
+  <div class="entry-content">
+    <p>gRPC -&gt; HTTP -&gt; TCP 三层超时排查实录 1. 问题背景 一次和风天气气压接口调用出现偶发错误：
+Get &#34;https://xiaomi-hope-api.qweather.net/v7/grid-weather/24h?lang=zh-hans&amp;location=80.65%2C16.41&amp;unit=m&#34;: dial tcp 172.104.38.93:443: i/o timeout 现象有几个关键点：
+调用失败概率不高，说明网络整体是通的，不是完全不可达。 变更点主要是 fallback 域名对应的 IP 从旧节点切到了新节点。 旧 IP 172.104.37.202 也有失败，但新 IP 172.104.38.93 在高峰期失败率约为旧 IP 的两倍。 单次失败请求的整体耗时只有约 510ms，不是常见的 5s 或 30s 超时。 日志时间线：
+10:19:33.110 hefeng cache miss，准备请求和风 10:19:33.110 domain 从 https://nn7fby8wfm.yun.qweatherapi.com 切换到 https://xiaomi-hope-api.qweather.net 10:19:33.110 创建 flowtoken：ft-https://xiaomi-hope-api.qweather.net 10:19:33.612 HTTP 请求报错：dial tcp 172.104.38.93:443: i/o timeout 10:19:33.612 SESSION 日志：cost=510ms，domain=https://xiaomi-hope-api.qweather.net:500 从时间线看，真正触发的是约 500ms 的连接阶段超时，而不是业务整体超时。
+2. 当前调用链路 接口链路可以抽象为：
+gRPC client | | gRPC deadline / timeout v hlth-weather-server gRPC handler | | handler -&gt; model -&gt; service v callHeFeng | | HTTP client timeout v commonhttpclient | | transportpool dial timeout v TCP connect to qweather IP 相关业务代码位置：
+...</p>
+  </div>
+  <footer class="entry-footer"><span title='2026-07-08 21:27:24 +0800 CST'>July 8, 2026</span></footer>
+  <a class="entry-link" aria-label="post link to 003" href="http://localhost:1313/post/003/"></a>
+</article>
+
+<article class="post-entry"> 
+  <header class="entry-header">
+    <h2 class="entry-hint-parent">Go 缓存踩坑：被 Slice 共享底层数组背刺的一天
+    </h2>
+  </header>
+  <div class="entry-content">
+    <p>最近遇到了一个有趣的问题：内容列表页面的封面图全部消失了，只剩下标题和时长等文字信息。
+看似是一个简单的&#34;图片不显示&#34;问题，排查下来却是对多个问题的层层剥离——修好一个，下一个才浮出水面。这个过程中踩的坑具有一定普遍性，整理出来供大家参考。
+系统背景 Go GRPC 微服务： 提供内容列表筛选等接口 内存缓存池： 服务启动时从数据库加载全量数据到内存，定时自动 reload 保持数据新鲜 多环境部署： 不同环境的节点需要将图片地址转换为当前环境可访问的地址 数据结构： CoverUrl（默认封面图）和 CoverUrlAlt（备用封面图）两个字段 列表接口的核心逻辑：从内存缓存中按分类获取列表，按照环境，将备用封面图 URL 经过转换后赋值给 CoverUrl 字段返回给客户端。
+乌龙：数据库中的&#34;异常数据&#34; 排查过程 发现图片不显示后，我的第一反应是去数据库看封面图数据。结果发现一个&#34;异常&#34;：
+A 类封面图 URL（客户端直接上传存储的）： https://cdn.example.com/img/cover.jpg?token=abc&amp;ts=123 B 类封面图 URL（服务端组装数据后 Marshal 存储的）： https://cdn.example.com/img/cover.jpg?token=abc\u0026ts=123 两组数据&#34;长得不一样&#34;！B 类图的 &amp; 全部变成了 \u0026。直觉告诉我这就是问题所在——URL 中的参数分隔符被转义了，解析肯定失败。
+于是写了一个反转义函数，部署上线：
+func UnescapeURL(rawURL string) string { return strings.ReplaceAll(rawURL, &#34;\\u0026&#34;, &#34;&amp;&#34;) } 问题依然存在，封面图还是不显示。
+复盘 仔细思考了一下才明白：\u0026 是 Go 标准库 json.Marshal 的默认行为——它会将 &amp;、&lt;、&gt; 转义为 Unicode 形式以防止 XSS。这是数据存储格式，不是数据使用格式。
+出问题的接口在读取数据库后，经过了标准的 json.Unmarshal 反序列化，\u0026 会被自动还原为 &amp;：
+// DB 中存储的 JSON 字符串 dbValue := `{&#34;url&#34;:&#34;https://cdn.example.com/img?token=abc\u0026ts=123&#34;}` // Unmarshal 后自动还原 var config struct{ URL string } json.Unmarshal([]byte(dbValue), &amp;config) // config.URL = &#34;https://cdn.example.com/img?token=abc&amp;ts=123&#34; // ✓ \u0026 已自动还原为 &amp; 这次误判的根本原因是：没有先确认出问题的接口走了什么数据处理链路，就凭直觉观察 DB 数据直接下了结论。
+...</p>
+  </div>
+  <footer class="entry-footer"><span title='2026-07-08 21:27:17 +0800 CST'>July 8, 2026</span></footer>
+  <a class="entry-link" aria-label="post link to Go 缓存踩坑：被 Slice 共享底层数组背刺的一天" href="http://localhost:1313/post/go-%E7%BC%93%E5%AD%98%E8%B8%A9%E5%9D%91%E8%A2%AB-slice-%E5%85%B1%E4%BA%AB%E5%BA%95%E5%B1%82%E6%95%B0%E7%BB%84%E8%83%8C%E5%88%BA%E7%9A%84%E4%B8%80%E5%A4%A9/"></a>
+</article>
+
+<article class="post-entry"> 
+  <header class="entry-header">
     <h2 class="entry-hint-parent">原来用Go写测试这么简单
     </h2>
   </header>

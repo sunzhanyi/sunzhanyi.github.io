@@ -6,8 +6,153 @@
     <description>Recent content on Zhanyi 的技术博客</description>
     <generator>Hugo</generator>
     <language>zh-cn</language>
-    <lastBuildDate>Sat, 30 May 2026 20:16:35 +0800</lastBuildDate>
+    <lastBuildDate>Wed, 15 Jul 2026 07:29:20 +0800</lastBuildDate>
     <atom:link href="http://localhost:1313/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>别让环境模拟越界：单元测试中的职责与边界</title>
+      <link>http://localhost:1313/post/%E5%88%AB%E8%AE%A9%E7%8E%AF%E5%A2%83%E6%A8%A1%E6%8B%9F%E8%B6%8A%E7%95%8C%E5%8D%95%E5%85%83%E6%B5%8B%E8%AF%95%E4%B8%AD%E7%9A%84%E8%81%8C%E8%B4%A3%E4%B8%8E%E8%BE%B9%E7%95%8C/</link>
+      <pubDate>Wed, 15 Jul 2026 07:29:20 +0800</pubDate>
+      <guid>http://localhost:1313/post/%E5%88%AB%E8%AE%A9%E7%8E%AF%E5%A2%83%E6%A8%A1%E6%8B%9F%E8%B6%8A%E7%95%8C%E5%8D%95%E5%85%83%E6%B5%8B%E8%AF%95%E4%B8%AD%E7%9A%84%E8%81%8C%E8%B4%A3%E4%B8%8E%E8%BE%B9%E7%95%8C/</guid>
+      <description>&lt;p&gt;在给项目中某个功能添加单元测试时，可能会遇到：为了验证某个业务分支，测试代码开始模拟完整运行环境，通常这种情况会让测试代码变得晦涩而且越来越难维护。&lt;/p&gt;
+&lt;p&gt;最近在对一个 Go 项目进行重构时，就遇到了这个问题。借此机会复盘一下，看看如何通过职责分离与依赖注入，重新划清单测的边界。&lt;/p&gt;
+&lt;h3 id=&#34;现象被环境模拟绑架的单元测试&#34;&gt;现象：被“环境模拟”绑架的单元测试&lt;/h3&gt;
+&lt;p&gt;典型表现包括：&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;通过修改全局变量环境&lt;/li&gt;
+&lt;li&gt;通过反射、unsafe 或类似手段修改第三方包的私有状态&lt;/li&gt;
+&lt;li&gt;为了触发某个分支，从外层 API 函数切入测试&lt;/li&gt;
+&lt;li&gt;测试失败后，难以判断是业务逻辑错误，还是环境模拟失败&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;例如：&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre tabindex=&#34;0&#34; style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;&#34;&gt;&lt;code class=&#34;language-go&#34; data-lang=&#34;go&#34;&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;&lt;span style=&#34;color:#66d9ef&#34;&gt;func&lt;/span&gt; &lt;span style=&#34;color:#a6e22e&#34;&gt;HandleRequest&lt;/span&gt;(&lt;span style=&#34;color:#a6e22e&#34;&gt;ctx&lt;/span&gt; &lt;span style=&#34;color:#a6e22e&#34;&gt;context&lt;/span&gt;.&lt;span style=&#34;color:#a6e22e&#34;&gt;Context&lt;/span&gt;, &lt;span style=&#34;color:#a6e22e&#34;&gt;req&lt;/span&gt; &lt;span style=&#34;color:#f92672&#34;&gt;*&lt;/span&gt;&lt;span style=&#34;color:#a6e22e&#34;&gt;Request&lt;/span&gt;) (&lt;span style=&#34;color:#f92672&#34;&gt;*&lt;/span&gt;&lt;span style=&#34;color:#a6e22e&#34;&gt;Response&lt;/span&gt;, &lt;span style=&#34;color:#66d9ef&#34;&gt;error&lt;/span&gt;) {
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;	&lt;span style=&#34;color:#66d9ef&#34;&gt;if&lt;/span&gt; &lt;span style=&#34;color:#a6e22e&#34;&gt;env&lt;/span&gt;.&lt;span style=&#34;color:#a6e22e&#34;&gt;IsOverseas&lt;/span&gt;() {
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;		&lt;span style=&#34;color:#66d9ef&#34;&gt;return&lt;/span&gt; &lt;span style=&#34;color:#a6e22e&#34;&gt;handleOverseas&lt;/span&gt;(&lt;span style=&#34;color:#a6e22e&#34;&gt;ctx&lt;/span&gt;, &lt;span style=&#34;color:#a6e22e&#34;&gt;req&lt;/span&gt;)
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;	}
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;	&lt;span style=&#34;color:#66d9ef&#34;&gt;return&lt;/span&gt; &lt;span style=&#34;color:#a6e22e&#34;&gt;handleDomestic&lt;/span&gt;(&lt;span style=&#34;color:#a6e22e&#34;&gt;ctx&lt;/span&gt;, &lt;span style=&#34;color:#a6e22e&#34;&gt;req&lt;/span&gt;)
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;}
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;p&gt;代码的意图比较明确：根据不同的环境，处理不同业务。&lt;/p&gt;
+&lt;p&gt;注意 HandleRequest 是请求入口，如果测试目标是验证 handleOverseas 的业务行为，那么测试就必须让 env.IsOverseas() 返回 true，换句话说，需要通过某种方式修改环境这个全局变量。&lt;/p&gt;
+&lt;p&gt;于是，测试代码很容易变成：&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre tabindex=&#34;0&#34; style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;&#34;&gt;&lt;code class=&#34;language-go&#34; data-lang=&#34;go&#34;&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;&lt;span style=&#34;color:#66d9ef&#34;&gt;func&lt;/span&gt; &lt;span style=&#34;color:#a6e22e&#34;&gt;TestOverseasLogic&lt;/span&gt;(&lt;span style=&#34;color:#a6e22e&#34;&gt;t&lt;/span&gt; &lt;span style=&#34;color:#f92672&#34;&gt;*&lt;/span&gt;&lt;span style=&#34;color:#a6e22e&#34;&gt;testing&lt;/span&gt;.&lt;span style=&#34;color:#a6e22e&#34;&gt;T&lt;/span&gt;) {
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;	&lt;span style=&#34;color:#a6e22e&#34;&gt;forceSetGlobalEnv&lt;/span&gt;(&lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;overseas&amp;#34;&lt;/span&gt;)
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;	&lt;span style=&#34;color:#66d9ef&#34;&gt;defer&lt;/span&gt; &lt;span style=&#34;color:#a6e22e&#34;&gt;restoreGlobalEnv&lt;/span&gt;()
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;	&lt;span style=&#34;color:#a6e22e&#34;&gt;resp&lt;/span&gt;, &lt;span style=&#34;color:#a6e22e&#34;&gt;err&lt;/span&gt; &lt;span style=&#34;color:#f92672&#34;&gt;:=&lt;/span&gt; &lt;span style=&#34;color:#a6e22e&#34;&gt;HandleRequest&lt;/span&gt;(&lt;span style=&#34;color:#a6e22e&#34;&gt;ctx&lt;/span&gt;, &lt;span style=&#34;color:#a6e22e&#34;&gt;req&lt;/span&gt;)
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;	&lt;span style=&#34;color:#a6e22e&#34;&gt;assertOverseasResponse&lt;/span&gt;(&lt;span style=&#34;color:#a6e22e&#34;&gt;t&lt;/span&gt;, &lt;span style=&#34;color:#a6e22e&#34;&gt;resp&lt;/span&gt;, &lt;span style=&#34;color:#a6e22e&#34;&gt;err&lt;/span&gt;)
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;}
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;p&gt;这种写法看上去覆盖了目标分支逻辑，实际却把单测边界扩大到了环境路由层，甚至运行环境本身。&lt;/p&gt;
+&lt;h3 id=&#34;职责耦合与测试边界的错位&#34;&gt;职责耦合与测试边界的错位&lt;/h3&gt;
+&lt;h4 id=&#34;被测对象不清晰&#34;&gt;被测对象不清晰&lt;/h4&gt;
+&lt;p&gt;单测首先要明确被测对象到底是什么：&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;是业务逻辑本身？&lt;/li&gt;
+&lt;li&gt;是入口函数的环境分发逻辑？&lt;/li&gt;
+&lt;li&gt;是环境配置是否正确？&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;这三类目标对应不同测试方式。&lt;/p&gt;
+&lt;p&gt;如果测试目标是业务逻辑，就应该直接测试业务逻辑对象；如果目标是入口分发，就应该只验证分发是否正确；如果目标是环境配置正确性，则不应放在普通单测中。&lt;/p&gt;
+&lt;p&gt;很多问题的根源在于：测试本来想测业务逻辑，但实际从入口函数切入，导致不得不模拟环境。&lt;/p&gt;
+&lt;h4 id=&#34;业务逻辑和路由逻辑混在同一层&#34;&gt;业务逻辑和路由逻辑混在同一层&lt;/h4&gt;
+&lt;p&gt;当代码被组织程这样时：&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre tabindex=&#34;0&#34; style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;&#34;&gt;&lt;code class=&#34;language-text&#34; data-lang=&#34;text&#34;&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;api/
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt; handler.go // 判断环境 + 调用国内/海外逻辑
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt; overseas_logic.go // 海外业务实现
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;p&gt;API 层同时承担了两个职责：&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;判断当前环境，决定走哪个分支&lt;/li&gt;
+&lt;li&gt;实现具体业务&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;这种结构会让测试天然倾向于从 API 入口进入。一旦从入口进入，环境判断就会成为测试前置条件，单测就容易被迫模拟环境。&lt;/p&gt;</description>
+    </item>
+    <item>
+      <title>003</title>
+      <link>http://localhost:1313/post/003/</link>
+      <pubDate>Wed, 08 Jul 2026 21:27:24 +0800</pubDate>
+      <guid>http://localhost:1313/post/003/</guid>
+      <description>&lt;h1 id=&#34;grpc---http---tcp-三层超时排查实录&#34;&gt;gRPC -&amp;gt; HTTP -&amp;gt; TCP 三层超时排查实录&lt;/h1&gt;
+&lt;h2 id=&#34;1-问题背景&#34;&gt;1. 问题背景&lt;/h2&gt;
+&lt;p&gt;一次和风天气气压接口调用出现偶发错误：&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre tabindex=&#34;0&#34; style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;&#34;&gt;&lt;code class=&#34;language-text&#34; data-lang=&#34;text&#34;&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;Get &amp;#34;https://xiaomi-hope-api.qweather.net/v7/grid-weather/24h?lang=zh-hans&amp;amp;location=80.65%2C16.41&amp;amp;unit=m&amp;#34;: dial tcp 172.104.38.93:443: i/o timeout
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;p&gt;现象有几个关键点：&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;调用失败概率不高，说明网络整体是通的，不是完全不可达。&lt;/li&gt;
+&lt;li&gt;变更点主要是 fallback 域名对应的 IP 从旧节点切到了新节点。&lt;/li&gt;
+&lt;li&gt;旧 IP &lt;code&gt;172.104.37.202&lt;/code&gt; 也有失败，但新 IP &lt;code&gt;172.104.38.93&lt;/code&gt; 在高峰期失败率约为旧 IP 的两倍。&lt;/li&gt;
+&lt;li&gt;单次失败请求的整体耗时只有约 &lt;code&gt;510ms&lt;/code&gt;，不是常见的 &lt;code&gt;5s&lt;/code&gt; 或 &lt;code&gt;30s&lt;/code&gt; 超时。&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;日志时间线：&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre tabindex=&#34;0&#34; style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;&#34;&gt;&lt;code class=&#34;language-text&#34; data-lang=&#34;text&#34;&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;10:19:33.110 hefeng cache miss，准备请求和风
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;10:19:33.110 domain 从 https://nn7fby8wfm.yun.qweatherapi.com 切换到 https://xiaomi-hope-api.qweather.net
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;10:19:33.110 创建 flowtoken：ft-https://xiaomi-hope-api.qweather.net
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;10:19:33.612 HTTP 请求报错：dial tcp 172.104.38.93:443: i/o timeout
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;10:19:33.612 SESSION 日志：cost=510ms，domain=https://xiaomi-hope-api.qweather.net:500
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;p&gt;从时间线看，真正触发的是约 &lt;code&gt;500ms&lt;/code&gt; 的连接阶段超时，而不是业务整体超时。&lt;/p&gt;
+&lt;h2 id=&#34;2-当前调用链路&#34;&gt;2. 当前调用链路&lt;/h2&gt;
+&lt;p&gt;接口链路可以抽象为：&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre tabindex=&#34;0&#34; style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;&#34;&gt;&lt;code class=&#34;language-text&#34; data-lang=&#34;text&#34;&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;gRPC client
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt; |
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt; | gRPC deadline / timeout
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt; v
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;hlth-weather-server gRPC handler
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt; |
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt; | handler -&amp;gt; model -&amp;gt; service
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt; v
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;callHeFeng
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt; |
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt; | HTTP client timeout
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt; v
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;commonhttpclient
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt; |
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt; | transportpool dial timeout
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt; v
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;TCP connect to qweather IP
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;p&gt;相关业务代码位置：&lt;/p&gt;</description>
+    </item>
+    <item>
+      <title>Go 缓存踩坑：被 Slice 共享底层数组背刺的一天</title>
+      <link>http://localhost:1313/post/go-%E7%BC%93%E5%AD%98%E8%B8%A9%E5%9D%91%E8%A2%AB-slice-%E5%85%B1%E4%BA%AB%E5%BA%95%E5%B1%82%E6%95%B0%E7%BB%84%E8%83%8C%E5%88%BA%E7%9A%84%E4%B8%80%E5%A4%A9/</link>
+      <pubDate>Wed, 08 Jul 2026 21:27:17 +0800</pubDate>
+      <guid>http://localhost:1313/post/go-%E7%BC%93%E5%AD%98%E8%B8%A9%E5%9D%91%E8%A2%AB-slice-%E5%85%B1%E4%BA%AB%E5%BA%95%E5%B1%82%E6%95%B0%E7%BB%84%E8%83%8C%E5%88%BA%E7%9A%84%E4%B8%80%E5%A4%A9/</guid>
+      <description>&lt;p&gt;最近遇到了一个有趣的问题：内容列表页面的封面图全部消失了，只剩下标题和时长等文字信息。&lt;/p&gt;
+&lt;p&gt;看似是一个简单的&amp;quot;图片不显示&amp;quot;问题，排查下来却是对多个问题的层层剥离——修好一个，下一个才浮出水面。这个过程中踩的坑具有一定普遍性，整理出来供大家参考。&lt;/p&gt;
+&lt;h2 id=&#34;系统背景&#34;&gt;系统背景&lt;/h2&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;strong&gt;Go GRPC 微服务：&lt;/strong&gt; 提供内容列表筛选等接口&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;内存缓存池：&lt;/strong&gt; 服务启动时从数据库加载全量数据到内存，定时自动 reload 保持数据新鲜&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;多环境部署：&lt;/strong&gt; 不同环境的节点需要将图片地址转换为当前环境可访问的地址&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;数据结构：&lt;/strong&gt; &lt;code&gt;CoverUrl&lt;/code&gt;（默认封面图）和 &lt;code&gt;CoverUrlAlt&lt;/code&gt;（备用封面图）两个字段&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;列表接口的核心逻辑：从内存缓存中按分类获取列表，按照环境，将备用封面图 URL 经过转换后赋值给 &lt;code&gt;CoverUrl&lt;/code&gt; 字段返回给客户端。&lt;/p&gt;
+&lt;h2 id=&#34;乌龙数据库中的异常数据&#34;&gt;乌龙：数据库中的&amp;quot;异常数据&amp;quot;&lt;/h2&gt;
+&lt;h3 id=&#34;排查过程&#34;&gt;排查过程&lt;/h3&gt;
+&lt;p&gt;发现图片不显示后，我的第一反应是去数据库看封面图数据。结果发现一个&amp;quot;异常&amp;quot;：&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;A 类封面图 URL（客户端直接上传存储的）：&lt;/li&gt;
+&lt;/ul&gt;
+&lt;pre tabindex=&#34;0&#34;&gt;&lt;code&gt;https://cdn.example.com/img/cover.jpg?token=abc&amp;amp;ts=123
+&lt;/code&gt;&lt;/pre&gt;&lt;ul&gt;
+&lt;li&gt;B 类封面图 URL（服务端组装数据后 Marshal 存储的）：&lt;/li&gt;
+&lt;/ul&gt;
+&lt;pre tabindex=&#34;0&#34;&gt;&lt;code&gt;https://cdn.example.com/img/cover.jpg?token=abc\u0026ts=123
+&lt;/code&gt;&lt;/pre&gt;&lt;p&gt;两组数据&amp;quot;长得不一样&amp;quot;！B 类图的 &lt;code&gt;&amp;amp;&lt;/code&gt; 全部变成了 &lt;code&gt;\u0026&lt;/code&gt;。直觉告诉我这就是问题所在——URL 中的参数分隔符被转义了，解析肯定失败。&lt;/p&gt;
+&lt;p&gt;于是写了一个反转义函数，部署上线：&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre tabindex=&#34;0&#34; style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;&#34;&gt;&lt;code class=&#34;language-go&#34; data-lang=&#34;go&#34;&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;&lt;span style=&#34;color:#66d9ef&#34;&gt;func&lt;/span&gt; &lt;span style=&#34;color:#a6e22e&#34;&gt;UnescapeURL&lt;/span&gt;(&lt;span style=&#34;color:#a6e22e&#34;&gt;rawURL&lt;/span&gt; &lt;span style=&#34;color:#66d9ef&#34;&gt;string&lt;/span&gt;) &lt;span style=&#34;color:#66d9ef&#34;&gt;string&lt;/span&gt; {
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt; &lt;span style=&#34;color:#66d9ef&#34;&gt;return&lt;/span&gt; &lt;span style=&#34;color:#a6e22e&#34;&gt;strings&lt;/span&gt;.&lt;span style=&#34;color:#a6e22e&#34;&gt;ReplaceAll&lt;/span&gt;(&lt;span style=&#34;color:#a6e22e&#34;&gt;rawURL&lt;/span&gt;, &lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;\\u0026&amp;#34;&lt;/span&gt;, &lt;span style=&#34;color:#e6db74&#34;&gt;&amp;#34;&amp;amp;&amp;#34;&lt;/span&gt;)
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;}
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;p&gt;问题依然存在，封面图还是不显示。&lt;/p&gt;
+&lt;h3 id=&#34;复盘&#34;&gt;复盘&lt;/h3&gt;
+&lt;p&gt;仔细思考了一下才明白：&lt;code&gt;\u0026&lt;/code&gt; 是 Go 标准库 &lt;code&gt;json.Marshal&lt;/code&gt; 的默认行为——它会将 &lt;code&gt;&amp;amp;&lt;/code&gt;、&lt;code&gt;&amp;lt;&lt;/code&gt;、&lt;code&gt;&amp;gt;&lt;/code&gt; 转义为 Unicode 形式以防止 XSS。这是数据&lt;strong&gt;存储格式&lt;/strong&gt;，不是数据&lt;strong&gt;使用格式&lt;/strong&gt;。&lt;/p&gt;
+&lt;p&gt;出问题的接口在读取数据库后，经过了标准的 &lt;code&gt;json.Unmarshal&lt;/code&gt; 反序列化，&lt;code&gt;\u0026&lt;/code&gt; 会被&lt;strong&gt;自动还原&lt;/strong&gt;为 &lt;code&gt;&amp;amp;&lt;/code&gt;：&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre tabindex=&#34;0&#34; style=&#34;color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;&#34;&gt;&lt;code class=&#34;language-go&#34; data-lang=&#34;go&#34;&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;&lt;span style=&#34;color:#75715e&#34;&gt;// DB 中存储的 JSON 字符串&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;&lt;span style=&#34;color:#a6e22e&#34;&gt;dbValue&lt;/span&gt; &lt;span style=&#34;color:#f92672&#34;&gt;:=&lt;/span&gt; &lt;span style=&#34;color:#e6db74&#34;&gt;`{&amp;#34;url&amp;#34;:&amp;#34;https://cdn.example.com/img?token=abc\u0026ts=123&amp;#34;}`&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;&lt;span style=&#34;color:#75715e&#34;&gt;// Unmarshal 后自动还原&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;&lt;span style=&#34;color:#66d9ef&#34;&gt;var&lt;/span&gt; &lt;span style=&#34;color:#a6e22e&#34;&gt;config&lt;/span&gt; &lt;span style=&#34;color:#66d9ef&#34;&gt;struct&lt;/span&gt;{ &lt;span style=&#34;color:#a6e22e&#34;&gt;URL&lt;/span&gt; &lt;span style=&#34;color:#66d9ef&#34;&gt;string&lt;/span&gt; }
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;&lt;span style=&#34;color:#a6e22e&#34;&gt;json&lt;/span&gt;.&lt;span style=&#34;color:#a6e22e&#34;&gt;Unmarshal&lt;/span&gt;([]byte(&lt;span style=&#34;color:#a6e22e&#34;&gt;dbValue&lt;/span&gt;), &lt;span style=&#34;color:#f92672&#34;&gt;&amp;amp;&lt;/span&gt;&lt;span style=&#34;color:#a6e22e&#34;&gt;config&lt;/span&gt;)
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;&lt;span style=&#34;color:#75715e&#34;&gt;// config.URL = &amp;#34;https://cdn.example.com/img?token=abc&amp;amp;ts=123&amp;#34;&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;&lt;span style=&#34;color:#75715e&#34;&gt;// ✓ \u0026 已自动还原为 &amp;amp;&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;p&gt;&lt;strong&gt;这次误判的根本原因是：没有先确认出问题的接口走了什么数据处理链路，就凭直觉观察 DB 数据直接下了结论。&lt;/strong&gt;&lt;/p&gt;</description>
+    </item>
     <item>
       <title>原来用Go写测试这么简单</title>
       <link>http://localhost:1313/post/%E5%8E%9F%E6%9D%A5%E7%94%A8go%E5%86%99%E6%B5%8B%E8%AF%95%E8%BF%99%E4%B9%88%E7%AE%80%E5%8D%95/</link>

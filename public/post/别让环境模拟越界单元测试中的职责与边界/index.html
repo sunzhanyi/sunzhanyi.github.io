@@ -1,0 +1,398 @@
+<!DOCTYPE html>
+<html lang="en" dir="auto" data-theme="auto">
+
+<head><script src="/livereload.js?mindelay=10&amp;v=2&amp;port=1313&amp;path=livereload" data-no-instant defer></script><meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+<meta name="robots" content="noindex, nofollow">
+<title>别让环境模拟越界：单元测试中的职责与边界 | Zhanyi 的技术博客</title>
+<meta name="keywords" content="">
+<meta name="description" content="在给项目中的功能编写单元测试时，有时会遇到：为了验证某个业务分支，测试代码开始模拟完整运行环境，通常这种情况会让测试代码变得晦涩而且越来越难维护。
+最近在对一个 Go 项目进行重构时，就遇到了这个问题。借此机会复盘一下，看看如何通过职责分离与依赖注入，重新划清单测的边界。
+测试反模式：被“全局环境”绑架的单测
+写单元测试时，测试对象需要在特定的环境下才能运行，于是就通过各种方式来模拟测试对象需要的环境，典型表现包括：
+
+通过修改全局变量环境来模拟环境
+通过反射、unsafe 或类似手段修改第三方包的私有状态来模拟环境
+为了触发环境分支测试，直接从外层 API 函数切入测试
+
+最终不但使测试代码晦涩难懂而且在测试失败后，难以判断是业务逻辑错误，还是环境模拟失败，增加CI（持续集成）过程的问题排查复杂度。
+下面是一个简化的案例：
+func HandleRequest(ctx context.Context, req *Request) (*Response, error) {
+	if env.IsOverseas() {
+		return handleOverseas(ctx, req)
+	}
+	return handleDomestic(ctx, req)
+}
+这个 API 通过环境检查处理两套逻辑。
+需要注意的是 HandleRequest 是请求入口，如果测试目标是验证 handleOverseas 的业务行为，那么测试就必须让 env.IsOverseas() 返回 true，换句话说，需要通过某种方式修改环境这个全局变量。
+于是，测试很自然就变成：
+func TestOverseasLogic(t *testing.T) {
+	forceSetGlobalEnv(&#34;overseas&#34;)
+	defer restoreGlobalEnv()
+
+	resp, err := HandleRequest(ctx, req)
+	assertOverseasResponse(t, resp, err)
+}
+职责耦合与测试边界的错位
+被测对象不清晰
+单测首先要明确被测对象到底是什么：
+
+是业务逻辑本身？
+是入口函数的环境分发逻辑？
+是环境配置是否正确？
+
+这三类目标对应不同测试方式。
+如果测试目标是业务逻辑，就应该直接测试业务逻辑对象；如果目标是入口分发，就应该只验证分发是否正确；如果目标是环境配置正确性，则不应放在普通单测中。
+很多问题的根源在于：测试本来想测业务逻辑，但实际从入口函数切入，导致不得不模拟环境。
+业务逻辑和路由逻辑混在同一层
+当代码被组织程这样时：
+api/
+ handler.go // 判断环境 &#43; 调用国内/海外逻辑
+ overseas_logic.go // 海外业务实现
+API 层同时承担了两个职责：
+
+判断当前环境，决定走哪个分支
+实现具体业务
+
+这种结构会让测试天然倾向于从 API 入口进入。一旦从入口进入，环境判断就会成为测试前置条件，单测就容易被迫模拟环境。">
+<meta name="author" content="">
+<link rel="canonical" href="http://localhost:1313/post/%E5%88%AB%E8%AE%A9%E7%8E%AF%E5%A2%83%E6%A8%A1%E6%8B%9F%E8%B6%8A%E7%95%8C%E5%8D%95%E5%85%83%E6%B5%8B%E8%AF%95%E4%B8%AD%E7%9A%84%E8%81%8C%E8%B4%A3%E4%B8%8E%E8%BE%B9%E7%95%8C/">
+<link crossorigin="anonymous" href="/assets/css/stylesheet.47e51c7d8489b002361bac156ce9a0a8776d08c5462c2cee95801efafdd90d35.css" integrity="sha256-R&#43;UcfYSJsAI2G6wVbOmgqHdtCMVGLCzulYAe&#43;v3ZDTU=" rel="preload stylesheet" as="style">
+<link rel="icon" href="http://localhost:1313/favicon.ico">
+<link rel="icon" type="image/png" sizes="16x16" href="http://localhost:1313/favicon-16x16.png">
+<link rel="icon" type="image/png" sizes="32x32" href="http://localhost:1313/favicon-32x32.png">
+<link rel="apple-touch-icon" href="http://localhost:1313/apple-touch-icon.png">
+<link rel="mask-icon" href="http://localhost:1313/safari-pinned-tab.svg">
+<meta name="theme-color" content="#2e2e33">
+<meta name="msapplication-TileColor" content="#2e2e33">
+<link rel="alternate" hreflang="en" href="http://localhost:1313/post/%E5%88%AB%E8%AE%A9%E7%8E%AF%E5%A2%83%E6%A8%A1%E6%8B%9F%E8%B6%8A%E7%95%8C%E5%8D%95%E5%85%83%E6%B5%8B%E8%AF%95%E4%B8%AD%E7%9A%84%E8%81%8C%E8%B4%A3%E4%B8%8E%E8%BE%B9%E7%95%8C/">
+<noscript>
+    <style>
+        #theme-toggle,
+        .top-link {
+            display: none;
+        }
+
+    </style>
+    <style>
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --theme: rgb(29, 30, 32);
+                --entry: rgb(46, 46, 51);
+                --primary: rgb(218, 218, 219);
+                --secondary: rgb(155, 156, 157);
+                --tertiary: rgb(65, 66, 68);
+                --content: rgb(196, 196, 197);
+                --code-block-bg: rgb(46, 46, 51);
+                --code-bg: rgb(55, 56, 62);
+                --border: rgb(51, 51, 51);
+                color-scheme: dark;
+            }
+
+            .list {
+                background: var(--theme);
+            }
+
+            .toc {
+                background: var(--entry);
+            }
+        }
+
+    </style>
+</noscript>
+<script>
+    if (localStorage.getItem("pref-theme") === "dark") {
+        document.querySelector("html").dataset.theme = 'dark';
+    } else if (localStorage.getItem("pref-theme") === "light") {
+       document.querySelector("html").dataset.theme = 'light';
+    } else if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
+        document.querySelector("html").dataset.theme = 'dark';
+    } else {
+        document.querySelector("html").dataset.theme = 'light';
+    }
+
+</script>
+</head>
+<body id="top">
+    <header class="header">
+    <nav class="header-nav">
+        <div class="logo">
+            <a href="http://localhost:1313/" accesskey="h" title="Zhanyi 的技术博客 (Alt + H)">Zhanyi 的技术博客</a>
+            <div class="logo-switches">
+                <button id="theme-toggle" class="theme-toggle" accesskey="t" title="(Alt + T)" aria-label="Toggle theme">
+                    <svg class="moon" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24"
+                        fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                        stroke-linejoin="round">
+                        <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+                    </svg>
+                    <svg class="sun" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24"
+                        fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                        stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="5"></circle>
+                        <line x1="12" y1="1" x2="12" y2="3"></line>
+                        <line x1="12" y1="21" x2="12" y2="23"></line>
+                        <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+                        <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+                        <line x1="1" y1="12" x2="3" y2="12"></line>
+                        <line x1="21" y1="12" x2="23" y2="12"></line>
+                        <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+                        <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+                    </svg>
+                </button>
+            </div>
+        </div>
+        <ul id="menu" class="menu">
+        </ul>
+    </nav>
+</header>
+<main class="main">
+
+<article class="post-single">
+  <header class="post-header">
+    
+    <h1 class="post-title entry-hint-parent">
+      别让环境模拟越界：单元测试中的职责与边界
+    </h1>
+    <div class="post-meta"><span title='2026-07-15 07:29:20 +0800 CST'>July 15, 2026</span>
+
+</div>
+  </header> 
+  <div class="post-content md-content"><p>在给项目中的功能编写单元测试时，有时会遇到：为了验证某个业务分支，测试代码开始模拟完整运行环境，通常这种情况会让测试代码变得晦涩而且越来越难维护。</p>
+<p>最近在对一个 Go 项目进行重构时，就遇到了这个问题。借此机会复盘一下，看看如何通过职责分离与依赖注入，重新划清单测的边界。</p>
+<h3 id="测试反模式被全局环境绑架的单测">测试反模式：被“全局环境”绑架的单测<a hidden class="anchor" aria-hidden="true" href="#测试反模式被全局环境绑架的单测">#</a></h3>
+<p>写单元测试时，测试对象需要在特定的环境下才能运行，于是就通过各种方式来模拟测试对象需要的环境，典型表现包括：</p>
+<ul>
+<li>通过修改全局变量环境来模拟环境</li>
+<li>通过反射、unsafe 或类似手段修改第三方包的私有状态来模拟环境</li>
+<li>为了触发环境分支测试，直接从外层 API 函数切入测试</li>
+</ul>
+<p>最终不但使测试代码晦涩难懂而且在测试失败后，难以判断是业务逻辑错误，还是环境模拟失败，增加CI（持续集成）过程的问题排查复杂度。</p>
+<p>下面是一个简化的案例：</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-go" data-lang="go"><span style="display:flex;"><span><span style="color:#66d9ef">func</span> <span style="color:#a6e22e">HandleRequest</span>(<span style="color:#a6e22e">ctx</span> <span style="color:#a6e22e">context</span>.<span style="color:#a6e22e">Context</span>, <span style="color:#a6e22e">req</span> <span style="color:#f92672">*</span><span style="color:#a6e22e">Request</span>) (<span style="color:#f92672">*</span><span style="color:#a6e22e">Response</span>, <span style="color:#66d9ef">error</span>) {
+</span></span><span style="display:flex;"><span>	<span style="color:#66d9ef">if</span> <span style="color:#a6e22e">env</span>.<span style="color:#a6e22e">IsOverseas</span>() {
+</span></span><span style="display:flex;"><span>		<span style="color:#66d9ef">return</span> <span style="color:#a6e22e">handleOverseas</span>(<span style="color:#a6e22e">ctx</span>, <span style="color:#a6e22e">req</span>)
+</span></span><span style="display:flex;"><span>	}
+</span></span><span style="display:flex;"><span>	<span style="color:#66d9ef">return</span> <span style="color:#a6e22e">handleDomestic</span>(<span style="color:#a6e22e">ctx</span>, <span style="color:#a6e22e">req</span>)
+</span></span><span style="display:flex;"><span>}
+</span></span></code></pre></div><p>这个 API 通过环境检查处理两套逻辑。</p>
+<p>需要注意的是 HandleRequest 是请求入口，如果测试目标是验证 handleOverseas 的业务行为，那么测试就必须让 env.IsOverseas() 返回 true，换句话说，需要通过某种方式修改环境这个全局变量。</p>
+<p>于是，测试很自然就变成：</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-go" data-lang="go"><span style="display:flex;"><span><span style="color:#66d9ef">func</span> <span style="color:#a6e22e">TestOverseasLogic</span>(<span style="color:#a6e22e">t</span> <span style="color:#f92672">*</span><span style="color:#a6e22e">testing</span>.<span style="color:#a6e22e">T</span>) {
+</span></span><span style="display:flex;"><span>	<span style="color:#a6e22e">forceSetGlobalEnv</span>(<span style="color:#e6db74">&#34;overseas&#34;</span>)
+</span></span><span style="display:flex;"><span>	<span style="color:#66d9ef">defer</span> <span style="color:#a6e22e">restoreGlobalEnv</span>()
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>	<span style="color:#a6e22e">resp</span>, <span style="color:#a6e22e">err</span> <span style="color:#f92672">:=</span> <span style="color:#a6e22e">HandleRequest</span>(<span style="color:#a6e22e">ctx</span>, <span style="color:#a6e22e">req</span>)
+</span></span><span style="display:flex;"><span>	<span style="color:#a6e22e">assertOverseasResponse</span>(<span style="color:#a6e22e">t</span>, <span style="color:#a6e22e">resp</span>, <span style="color:#a6e22e">err</span>)
+</span></span><span style="display:flex;"><span>}
+</span></span></code></pre></div><h3 id="职责耦合与测试边界的错位">职责耦合与测试边界的错位<a hidden class="anchor" aria-hidden="true" href="#职责耦合与测试边界的错位">#</a></h3>
+<h4 id="被测对象不清晰">被测对象不清晰<a hidden class="anchor" aria-hidden="true" href="#被测对象不清晰">#</a></h4>
+<p>单测首先要明确被测对象到底是什么：</p>
+<ul>
+<li>是业务逻辑本身？</li>
+<li>是入口函数的环境分发逻辑？</li>
+<li>是环境配置是否正确？</li>
+</ul>
+<p>这三类目标对应不同测试方式。</p>
+<p>如果测试目标是业务逻辑，就应该直接测试业务逻辑对象；如果目标是入口分发，就应该只验证分发是否正确；如果目标是环境配置正确性，则不应放在普通单测中。</p>
+<p>很多问题的根源在于：测试本来想测业务逻辑，但实际从入口函数切入，导致不得不模拟环境。</p>
+<h4 id="业务逻辑和路由逻辑混在同一层">业务逻辑和路由逻辑混在同一层<a hidden class="anchor" aria-hidden="true" href="#业务逻辑和路由逻辑混在同一层">#</a></h4>
+<p>当代码被组织程这样时：</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-text" data-lang="text"><span style="display:flex;"><span>api/
+</span></span><span style="display:flex;"><span> handler.go // 判断环境 + 调用国内/海外逻辑
+</span></span><span style="display:flex;"><span> overseas_logic.go // 海外业务实现
+</span></span></code></pre></div><p>API 层同时承担了两个职责：</p>
+<ul>
+<li>判断当前环境，决定走哪个分支</li>
+<li>实现具体业务</li>
+</ul>
+<p>这种结构会让测试天然倾向于从 API 入口进入。一旦从入口进入，环境判断就会成为测试前置条件，单测就容易被迫模拟环境。</p>
+<h4 id="环境正确性被误放进单测">环境正确性被误放进单测<a hidden class="anchor" aria-hidden="true" href="#环境正确性被误放进单测">#</a></h4>
+<p>环境配置是否正确，例如：</p>
+<ul>
+<li>地域是否与环境对应</li>
+<li>配置文件是否被正确加载</li>
+</ul>
+<p>这些属于配置或部署正确性，不属于普通业务单测的责任。</p>
+<p>业务单测需要测试：</p>
+<ul>
+<li>当业务依赖已经明确具体的环境，业务行为是否正确</li>
+<li>直接执行业务逻辑时，计算、读写、返回结构是否正确</li>
+</ul>
+<h3 id="重构边界与依赖注入实践">重构边界与依赖注入实践<a hidden class="anchor" aria-hidden="true" href="#重构边界与依赖注入实践">#</a></h3>
+<h4 id="1-确定单测边界">1. 确定单测边界<a hidden class="anchor" aria-hidden="true" href="#1-确定单测边界">#</a></h4>
+<p>如果当前测试目标是海外业务实现，就不应从入口函数切入，而应直接调用海外实现函数或业务对象。</p>
+<p>不推荐：</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-go" data-lang="go"><span style="display:flex;"><span><span style="color:#66d9ef">func</span> <span style="color:#a6e22e">TestOverseasBehavior</span>(<span style="color:#a6e22e">t</span> <span style="color:#f92672">*</span><span style="color:#a6e22e">testing</span>.<span style="color:#a6e22e">T</span>) {
+</span></span><span style="display:flex;"><span>	<span style="color:#a6e22e">forceSetGlobalEnv</span>(<span style="color:#e6db74">&#34;overseas&#34;</span>)
+</span></span><span style="display:flex;"><span>	<span style="color:#66d9ef">defer</span> <span style="color:#a6e22e">restoreGlobalEnv</span>()
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>	<span style="color:#a6e22e">resp</span>, <span style="color:#a6e22e">err</span> <span style="color:#f92672">:=</span> <span style="color:#a6e22e">HandleRequest</span>(<span style="color:#a6e22e">ctx</span>, <span style="color:#a6e22e">req</span>)
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>	<span style="color:#a6e22e">assertOverseasResponse</span>(<span style="color:#a6e22e">t</span>, <span style="color:#a6e22e">resp</span>, <span style="color:#a6e22e">err</span>)
+</span></span><span style="display:flex;"><span>}
+</span></span></code></pre></div><p>深入应用 AI 工具（如 Harness/Cursor 等）重塑开发流，专注于高复杂度代码生成与深度 Code Review。理解 AI 工程化底层原理与 CI/CD 集成逻辑，能够高效协同平台团队落地自动化流程，利用 AI 显著提升代码交付质量与研发人效
+推荐：</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-go" data-lang="go"><span style="display:flex;"><span><span style="color:#66d9ef">func</span> <span style="color:#a6e22e">TestOverseasBehavior</span>(<span style="color:#a6e22e">t</span> <span style="color:#f92672">*</span><span style="color:#a6e22e">testing</span>.<span style="color:#a6e22e">T</span>) {
+</span></span><span style="display:flex;"><span>	<span style="color:#a6e22e">manager</span> <span style="color:#f92672">:=</span> <span style="color:#f92672">&amp;</span><span style="color:#a6e22e">OverseasManager</span>{
+</span></span><span style="display:flex;"><span>		<span style="color:#a6e22e">Repo</span>: <span style="color:#a6e22e">mockRepo</span>,
+</span></span><span style="display:flex;"><span>		<span style="color:#a6e22e">UserClient</span>: <span style="color:#a6e22e">mockUserClient</span>,
+</span></span><span style="display:flex;"><span>		<span style="color:#a6e22e">DataClient</span>: <span style="color:#a6e22e">mockDataClient</span>,
+</span></span><span style="display:flex;"><span>	}
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>	<span style="color:#a6e22e">resp</span>, <span style="color:#a6e22e">err</span> <span style="color:#f92672">:=</span> <span style="color:#a6e22e">manager</span>.<span style="color:#a6e22e">Handle</span>(<span style="color:#a6e22e">ctx</span>, <span style="color:#a6e22e">req</span>)
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>	<span style="color:#a6e22e">assertOverseasResponse</span>(<span style="color:#a6e22e">t</span>, <span style="color:#a6e22e">resp</span>, <span style="color:#a6e22e">err</span>)
+</span></span><span style="display:flex;"><span>}
+</span></span></code></pre></div><p>这样测试只关注海外业务行为，不再依赖环境模拟。</p>
+<h4 id="2-保持-api-简单">2. 保持 API 简单<a hidden class="anchor" aria-hidden="true" href="#2-保持-api-简单">#</a></h4>
+<p>应用程序接口只需要处理：</p>
+<ul>
+<li>参数解析</li>
+<li>身份或上下文提取</li>
+<li>根据环境选择业务实现</li>
+</ul>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-go" data-lang="go"><span style="display:flex;"><span><span style="color:#66d9ef">func</span> <span style="color:#a6e22e">HandleRequest</span>(<span style="color:#a6e22e">ctx</span> <span style="color:#a6e22e">context</span>.<span style="color:#a6e22e">Context</span>, <span style="color:#a6e22e">req</span> <span style="color:#f92672">*</span><span style="color:#a6e22e">Request</span>) (<span style="color:#f92672">*</span><span style="color:#a6e22e">Response</span>, <span style="color:#66d9ef">error</span>) {
+</span></span><span style="display:flex;"><span>	<span style="color:#66d9ef">if</span> <span style="color:#a6e22e">env</span>.<span style="color:#a6e22e">IsOverseas</span>() {
+</span></span><span style="display:flex;"><span>		<span style="color:#66d9ef">return</span> <span style="color:#a6e22e">overseasManager</span>.<span style="color:#a6e22e">Handle</span>(<span style="color:#a6e22e">ctx</span>, <span style="color:#a6e22e">req</span>)
+</span></span><span style="display:flex;"><span>	}
+</span></span><span style="display:flex;"><span>	<span style="color:#66d9ef">return</span> <span style="color:#a6e22e">domesticClient</span>.<span style="color:#a6e22e">Handle</span>(<span style="color:#a6e22e">ctx</span>, <span style="color:#a6e22e">req</span>)
+</span></span><span style="display:flex;"><span>}
+</span></span></code></pre></div><p>如果需要验证路由，也只需要增加一个简单的 mock 对象来模拟环境分支的逻辑：</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-go" data-lang="go"><span style="display:flex;"><span><span style="color:#66d9ef">func</span> <span style="color:#a6e22e">TestHandleRequest_RouteToOverseas</span>(<span style="color:#a6e22e">t</span> <span style="color:#f92672">*</span><span style="color:#a6e22e">testing</span>.<span style="color:#a6e22e">T</span>) {
+</span></span><span style="display:flex;"><span>	<span style="color:#a6e22e">envChecker</span> <span style="color:#f92672">:=</span> <span style="color:#a6e22e">mockEnvChecker</span>{<span style="color:#a6e22e">overseas</span>: <span style="color:#66d9ef">true</span>}
+</span></span><span style="display:flex;"><span>	<span style="color:#a6e22e">overseasManager</span> <span style="color:#f92672">:=</span> <span style="color:#a6e22e">mockOverseasManager</span>{}
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>	<span style="color:#a6e22e">handler</span> <span style="color:#f92672">:=</span> <span style="color:#f92672">&amp;</span><span style="color:#a6e22e">Handler</span>{
+</span></span><span style="display:flex;"><span>		<span style="color:#a6e22e">EnvChecker</span>: <span style="color:#a6e22e">envChecker</span>,
+</span></span><span style="display:flex;"><span>		<span style="color:#a6e22e">OverseasManager</span>: <span style="color:#a6e22e">overseasManager</span>,
+</span></span><span style="display:flex;"><span>	}
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>	<span style="color:#a6e22e">_</span>, <span style="color:#a6e22e">_</span> = <span style="color:#a6e22e">handler</span>.<span style="color:#a6e22e">HandleRequest</span>(<span style="color:#a6e22e">ctx</span>, <span style="color:#a6e22e">req</span>)
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>	<span style="color:#a6e22e">assertCalled</span>(<span style="color:#a6e22e">t</span>, <span style="color:#a6e22e">overseasManager</span>)
+</span></span><span style="display:flex;"><span>}
+</span></span></code></pre></div><h4 id="3-业务逻辑移到-manager-层">3. 业务逻辑移到 manager 层<a hidden class="anchor" aria-hidden="true" href="#3-业务逻辑移到-manager-层">#</a></h4>
+<p>其实，单测的边界混乱不清，根本的原因还是代码组织设计有问题。对于上面的代码，更合理的组织方式是：</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-text" data-lang="text"><span style="display:flex;"><span>api/
+</span></span><span style="display:flex;"><span> handler.go
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>lib/
+</span></span><span style="display:flex;"><span> manager/
+</span></span><span style="display:flex;"><span> overseas_manager.go
+</span></span></code></pre></div><p>把业务封装到单独的管理器中，通过 interface 对外提供接口，这就把单测的边界限制在管理器中，让业务和单测的边界变得更加清晰。</p>
+<p>定义完整接口：</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-go" data-lang="go"><span style="display:flex;"><span><span style="color:#66d9ef">type</span> <span style="color:#a6e22e">OverseasManager</span> <span style="color:#66d9ef">interface</span> {
+</span></span><span style="display:flex;"><span>	<span style="color:#a6e22e">Handle</span>(<span style="color:#a6e22e">ctx</span> <span style="color:#a6e22e">context</span>.<span style="color:#a6e22e">Context</span>, <span style="color:#a6e22e">req</span> <span style="color:#f92672">*</span><span style="color:#a6e22e">Request</span>) (<span style="color:#f92672">*</span><span style="color:#a6e22e">Response</span>, <span style="color:#66d9ef">error</span>)
+</span></span><span style="display:flex;"><span>	<span style="color:#a6e22e">Preview</span>(<span style="color:#a6e22e">ctx</span> <span style="color:#a6e22e">context</span>.<span style="color:#a6e22e">Context</span>, <span style="color:#a6e22e">req</span> <span style="color:#f92672">*</span><span style="color:#a6e22e">PreviewRequest</span>) (<span style="color:#f92672">*</span><span style="color:#a6e22e">PreviewResponse</span>, <span style="color:#66d9ef">error</span>)
+</span></span><span style="display:flex;"><span>	<span style="color:#a6e22e">Update</span>(<span style="color:#a6e22e">ctx</span> <span style="color:#a6e22e">context</span>.<span style="color:#a6e22e">Context</span>, <span style="color:#a6e22e">req</span> <span style="color:#f92672">*</span><span style="color:#a6e22e">UpdateRequest</span>) (<span style="color:#f92672">*</span><span style="color:#a6e22e">UpdateResponse</span>, <span style="color:#66d9ef">error</span>)
+</span></span><span style="display:flex;"><span>}
+</span></span></code></pre></div><p>在实现层中，通过依赖注入获得 DAO、RPC client 等其他基础能力：</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"><code class="language-go" data-lang="go"><span style="display:flex;"><span><span style="color:#66d9ef">type</span> <span style="color:#a6e22e">OverseasManager</span> <span style="color:#66d9ef">struct</span> {
+</span></span><span style="display:flex;"><span>	<span style="color:#a6e22e">repo</span> <span style="color:#a6e22e">Repository</span>
+</span></span><span style="display:flex;"><span>	<span style="color:#a6e22e">userClient</span> <span style="color:#a6e22e">UserClient</span>
+</span></span><span style="display:flex;"><span>	<span style="color:#a6e22e">dataClient</span> <span style="color:#a6e22e">DataClient</span>
+</span></span><span style="display:flex;"><span>}
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">func</span> (<span style="color:#a6e22e">m</span> <span style="color:#f92672">*</span><span style="color:#a6e22e">OverseasManager</span>) <span style="color:#a6e22e">Handle</span>(<span style="color:#a6e22e">ctx</span> <span style="color:#a6e22e">context</span>.<span style="color:#a6e22e">Context</span>, <span style="color:#a6e22e">req</span> <span style="color:#f92672">*</span><span style="color:#a6e22e">Request</span>) (<span style="color:#f92672">*</span><span style="color:#a6e22e">Response</span>, <span style="color:#66d9ef">error</span>) {
+</span></span><span style="display:flex;"><span>	<span style="color:#75715e">// overseas business logic</span>
+</span></span><span style="display:flex;"><span>}
+</span></span></code></pre></div><h3 id="总结">总结<a hidden class="anchor" aria-hidden="true" href="#总结">#</a></h3>
+<p>环境依赖类单测最重要的是先划清边界。如果测试目标是业务实现，就直接测试业务实现；如果测试目标是入口路由，就只测试分发；如果测试目标是环境配置正确性，就不要放在普通单测里。</p>
+<p>更推荐的设计是：API 层负责路由，Manager 层负责业务，环境判断停留在入口边界，单测主要覆盖 Manager，环境配置正确性交给集成测试或配置校验。</p>
+<p>对应原则可以概括为：
+不要在单测里伪造完整运行环境；
+把环境作为边界条件处理；
+把业务逻辑放在可直接测试的对象中。</p>
+<p>这样可以减少全局状态污染、降低 mock 维护成本，也能让测试失败时更容易定位到真正的业务问题。</p>
+<p>文章里 mockRepo 等变量在测试代码中直接使用了，要不要加一句注释说明这些 Mock 是通过 mockgen 等工具生成的，方便不�</p>
+
+
+  </div>
+
+  <footer class="post-footer">
+    <ul class="post-tags">
+    </ul>
+  </footer>
+</article>
+    </main>
+    
+<footer class="footer">
+        <span>&copy; 2026 <a href="http://localhost:1313/">Zhanyi 的技术博客</a></span> · 
+
+    <span>
+        Powered by
+        <a href="https://gohugo.io/" rel="noopener noreferrer" target="_blank">Hugo</a> &
+        <a href="https://github.com/adityatelange/hugo-PaperMod/" rel="noopener" target="_blank">PaperMod</a>
+    </span>
+</footer>
+<a href="#top" id="top-link" class="top-link hidden" aria-label="go to top" title="Go to Top (Alt + G)" accesskey="g">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+        stroke-linecap="round" stroke-linejoin="round" class="feather feather-chevrons-up">
+        <polyline points="17 11 12 6 7 11"></polyline>
+        <polyline points="17 18 12 13 7 18"></polyline>
+    </svg>
+</a>
+
+<script>
+    let menu = document.getElementById('menu');
+    if (menu) {
+        
+        const scrollPosition = localStorage.getItem("menu-scroll-position");
+        if (scrollPosition) {
+            menu.scrollLeft = parseInt(scrollPosition, 10);
+        }
+        
+        menu.onscroll = function () {
+            localStorage.setItem("menu-scroll-position", menu.scrollLeft);
+        }
+    }
+
+    document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+        anchor.addEventListener("click", function (e) {
+            e.preventDefault();
+            var id = this.getAttribute("href").substr(1);
+            if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+                document.querySelector(`[id='${decodeURIComponent(id)}']`).scrollIntoView({
+                    behavior: "smooth"
+                });
+            } else {
+                document.querySelector(`[id='${decodeURIComponent(id)}']`).scrollIntoView();
+            }
+            if (id === "top") {
+                history.replaceState(null, null, " ");
+            } else {
+                history.pushState(null, null, `#${id}`);
+            }
+        });
+    });
+
+</script>
+<script>
+    var toplink = document.getElementById("top-link");
+    window.onscroll = function () {
+        const scrollThreshold = window.innerHeight;
+        if (document.body.scrollTop > scrollThreshold || document.documentElement.scrollTop > scrollThreshold) {
+            toplink.classList.remove("hidden");
+        } else {
+            toplink.classList.add("hidden");
+        }
+    };
+
+</script>
+<script>
+    document.getElementById("theme-toggle").addEventListener("click", () => {
+        const html = document.querySelector("html");
+        if (html.dataset.theme === "dark") {
+            html.dataset.theme = 'light';
+            localStorage.setItem("pref-theme", 'light');
+        } else {
+            html.dataset.theme = 'dark';
+            localStorage.setItem("pref-theme", 'dark');
+        }
+    })
+
+</script>
+</body>
+
+</html>

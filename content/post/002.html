@@ -1,0 +1,451 @@
+<!DOCTYPE html>
+        <html>
+        <head>
+            <meta charset="UTF-8">
+            <title>&#x73af;&#x5883;&#x4f9d;&#x8d56;&#x7c7b;&#x5355;&#x6d4b;&#x7684;&#x8fb9;&#x754c;&#x6cbb;&#x7406;</title>
+            <style>
+/* From extension vscode.github */
+/*---------------------------------------------------------------------------------------------
+ *  Copyright (c) Microsoft Corporation. All rights reserved.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
+ *--------------------------------------------------------------------------------------------*/
+
+.vscode-dark img[src$=\#gh-light-mode-only],
+.vscode-light img[src$=\#gh-dark-mode-only],
+.vscode-high-contrast:not(.vscode-high-contrast-light) img[src$=\#gh-light-mode-only],
+.vscode-high-contrast-light img[src$=\#gh-dark-mode-only] {
+	display: none;
+}
+
+/* From extension bierner.markdown-prism */
+
+/* From extension davidmwhynot.markdown-higlightjs */
+/*
+
+Atom One Dark by Daniel Gamage
+Original One Dark Syntax theme from https://github.com/atom/one-dark-syntax
+
+base:    #282c34
+mono-1:  #abb2bf
+mono-2:  #818896
+mono-3:  #5c6370
+hue-1:   #56b6c2
+hue-2:   #61aeee
+hue-3:   #c678dd
+hue-4:   #98c379
+hue-5:   #e06c75
+hue-5-2: #be5046
+hue-6:   #d19a66
+hue-6-2: #e6c07b
+
+*/
+
+.hljs {
+  display: block;
+  overflow-x: auto;
+  padding: 0.5em;
+  color: #abb2bf;
+  background: #282c34;
+}
+
+.hljs-comment,
+.hljs-quote {
+  color: #5c6370;
+  font-style: italic;
+}
+
+.hljs-doctag,
+.hljs-keyword,
+.hljs-formula {
+  color: #c678dd;
+}
+
+.hljs-section,
+.hljs-name,
+.hljs-selector-tag,
+.hljs-deletion,
+.hljs-subst {
+  color: #e06c75;
+}
+
+.hljs-literal {
+  color: #56b6c2;
+}
+
+.hljs-string,
+.hljs-regexp,
+.hljs-addition,
+.hljs-attribute,
+.hljs-meta-string {
+  color: #98c379;
+}
+
+.hljs-built_in,
+.hljs-class .hljs-title {
+  color: #e6c07b;
+}
+
+.hljs-attr,
+.hljs-variable,
+.hljs-template-variable,
+.hljs-type,
+.hljs-selector-class,
+.hljs-selector-attr,
+.hljs-selector-pseudo,
+.hljs-number {
+  color: #d19a66;
+}
+
+.hljs-symbol,
+.hljs-bullet,
+.hljs-link,
+.hljs-meta,
+.hljs-selector-id,
+.hljs-title {
+  color: #61aeee;
+}
+
+.hljs-emphasis {
+  font-style: italic;
+}
+
+.hljs-strong {
+  font-weight: bold;
+}
+
+.hljs-link {
+  text-decoration: underline;
+}
+
+</style>
+            
+        <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/Microsoft/vscode/extensions/markdown-language-features/media/markdown.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/Microsoft/vscode/extensions/markdown-language-features/media/highlight.css">
+<style>
+            body {
+                font-family: -apple-system, BlinkMacSystemFont, 'Segoe WPC', 'Segoe UI', system-ui, 'Ubuntu', 'Droid Sans', sans-serif;
+                font-size: 14px;
+                line-height: 1.6;
+            }
+        </style>
+        <style>
+.task-list-item {
+    list-style-type: none;
+}
+
+.task-list-item-checkbox {
+    margin-left: -20px;
+    vertical-align: middle;
+    pointer-events: none;
+}
+</style>
+<style>
+:root {
+  --color-note: #0969da;
+  --color-tip: #1a7f37;
+  --color-warning: #9a6700;
+  --color-severe: #bc4c00;
+  --color-caution: #d1242f;
+  --color-important: #8250df;
+}
+
+</style>
+<style>
+@media (prefers-color-scheme: dark) {
+  :root {
+    --color-note: #2f81f7;
+    --color-tip: #3fb950;
+    --color-warning: #d29922;
+    --color-severe: #db6d28;
+    --color-caution: #f85149;
+    --color-important: #a371f7;
+  }
+}
+
+</style>
+<style>
+.markdown-alert {
+  padding: 0.5rem 1rem;
+  margin-bottom: 16px;
+  color: inherit;
+  border-left: .25em solid #888;
+}
+
+.markdown-alert>:first-child {
+  margin-top: 0
+}
+
+.markdown-alert>:last-child {
+  margin-bottom: 0
+}
+
+.markdown-alert .markdown-alert-title {
+  display: flex;
+  font-weight: 500;
+  align-items: center;
+  line-height: 1
+}
+
+.markdown-alert .markdown-alert-title .octicon {
+  margin-right: 0.5rem;
+  display: inline-block;
+  overflow: visible !important;
+  vertical-align: text-bottom;
+  fill: currentColor;
+}
+
+.markdown-alert.markdown-alert-note {
+  border-left-color: var(--color-note);
+}
+
+.markdown-alert.markdown-alert-note .markdown-alert-title {
+  color: var(--color-note);
+}
+
+.markdown-alert.markdown-alert-important {
+  border-left-color: var(--color-important);
+}
+
+.markdown-alert.markdown-alert-important .markdown-alert-title {
+  color: var(--color-important);
+}
+
+.markdown-alert.markdown-alert-warning {
+  border-left-color: var(--color-warning);
+}
+
+.markdown-alert.markdown-alert-warning .markdown-alert-title {
+  color: var(--color-warning);
+}
+
+.markdown-alert.markdown-alert-tip {
+  border-left-color: var(--color-tip);
+}
+
+.markdown-alert.markdown-alert-tip .markdown-alert-title {
+  color: var(--color-tip);
+}
+
+.markdown-alert.markdown-alert-caution {
+  border-left-color: var(--color-caution);
+}
+
+.markdown-alert.markdown-alert-caution .markdown-alert-title {
+  color: var(--color-caution);
+}
+
+</style>
+        
+        </head>
+        <body class="vscode-body vscode-dark">
+            <style>@import url('vscode-resource:/Users/s7i/.vscode/extensions/bierner.markdown-prism-0.0.5/node_modules/prismjs/themes/prism-tomorrow.css')</style><p>+++
+date = '2026-07-08T21:27:21+08:00'
+draft = true
+title = '002'
++++</p>
+<h1 id="环境依赖类单测的边界治理">环境依赖类单测的边界治理</h1>
+<h2 id="一问题">一、问题</h2>
+<p>在环境依赖类业务中，单测经常会出现一个误区：为了验证某个业务分支，测试代码开始模拟完整运行环境。</p>
+<p>典型表现包括：</p>
+<ul>
+<li>通过修改全局变量模拟不同地域、机房或环境。</li>
+<li>通过反射、<code>unsafe</code> 或类似手段修改第三方包的私有状态。</li>
+<li>为了触发某个入口分支，从较外层 API 函数切入测试。</li>
+<li>测试文件引入大量与当前测试目标无关的 mock。</li>
+<li>测试失败后，难以判断是业务逻辑错误，还是环境模拟失败。</li>
+</ul>
+<p>例如，一个服务存在国内和海外两套逻辑：</p>
+<pre><code class="hljs language-go"><span class="hljs-function"><span class="hljs-keyword">func</span> <span class="hljs-title">HandleRequest</span><span class="hljs-params">(ctx context.Context, req *Request)</span> <span class="hljs-params">(*Response, error)</span></span> {
+	<span class="hljs-keyword">if</span> env.IsOverseas() {
+		<span class="hljs-keyword">return</span> handleOverseas(ctx, req)
+	}
+	<span class="hljs-keyword">return</span> handleDomestic(ctx, req)
+}
+</code></pre>
+<p>如果测试目标是验证 <code>handleOverseas</code> 的业务行为，却从 <code>HandleRequest</code> 入口切入，那么测试就必须让 <code>env.IsOverseas()</code> 返回 true。</p>
+<p>这时测试很容易变成：</p>
+<pre><code class="hljs language-go"><span class="hljs-function"><span class="hljs-keyword">func</span> <span class="hljs-title">TestOverseasLogic</span><span class="hljs-params">(t *testing.T)</span></span> {
+	forceSetGlobalEnv(<span class="hljs-string">"overseas"</span>)
+	<span class="hljs-keyword">defer</span> restoreGlobalEnv()
+
+	resp, err := HandleRequest(ctx, req)
+
+	assertOverseasResponse(t, resp, err)
+}
+</code></pre>
+<p>这种写法表面上覆盖了海外逻辑，实际却把单测边界扩大到了环境路由层，甚至运行环境本身。</p>
+<h2 id="二原因">二、原因</h2>
+<h3 id="1-被测对象不清晰">1. 被测对象不清晰</h3>
+<p>单测首先要明确被测对象到底是什么：</p>
+<ul>
+<li>是海外业务逻辑本身？</li>
+<li>是入口函数的环境分发逻辑？</li>
+<li>是环境配置是否正确？</li>
+</ul>
+<p>这三类目标对应不同测试方式。</p>
+<p>如果测试目标是业务逻辑，就应该直接测试业务逻辑对象；如果目标是入口分发，就应该只验证分发是否正确；如果目标是环境配置正确性，则不应放在普通单测中。</p>
+<p>很多问题的根源在于：测试本来想测业务逻辑，但实际从入口函数切入，导致不得不模拟环境。</p>
+<h3 id="2-业务逻辑和路由逻辑混在同一层">2. 业务逻辑和路由逻辑混在同一层</h3>
+<p>当代码结构类似下面这样时，测试很容易写偏：</p>
+<pre><code class="hljs language-text">api/
+ handler.go // 判断环境 + 调用国内/海外逻辑
+ overseas_logic.go // 海外业务实现
+</code></pre>
+<p>API 层同时承担了两个职责：</p>
+<ul>
+<li>判断当前环境，决定走哪个分支。</li>
+<li>承载具体业务实现。</li>
+</ul>
+<p>这种结构会让测试天然倾向于从 API 入口进入。一旦从入口进入，环境判断就会成为测试前置条件，单测就容易被迫模拟环境。</p>
+<h3 id="3-环境正确性被误放进单测">3. 环境正确性被误放进单测</h3>
+<p>环境配置是否正确，例如：</p>
+<ul>
+<li>某个地域是否属于海外。</li>
+<li>某个 IDC 是否映射到正确业务区域。</li>
+<li>某个配置文件是否被正确加载。</li>
+</ul>
+<p>这些属于配置或部署正确性，不属于普通业务单测的责任。</p>
+<p>业务单测更适合验证：</p>
+<pre><code class="hljs language-text">当业务依赖告诉我当前是海外时，业务行为是否正确。
+当直接执行海外业务逻辑时，计算、读写、返回结构是否正确。
+</code></pre>
+<p>而不是验证：</p>
+<pre><code class="hljs language-text">当前真实运行环境是否被识别为海外。
+</code></pre>
+<h3 id="4-mock-所有权不清晰">4. mock 所有权不清晰</h3>
+<p>如果测试中为了某个外部接口手工生成一个大 mock，并放在具体业务目录下，也会带来维护问题：</p>
+<ul>
+<li>mock 与接口定义分离，接口升级后容易失效。</li>
+<li>文件体积大，污染当前业务测试目录。</li>
+<li>其他业务包无法复用。</li>
+<li>当前测试未使用时，容易变成冗余代码。</li>
+</ul>
+<p>mock 的位置应尽量跟随接口所有权。接口在哪个包定义，mock 最好由哪个包统一提供。</p>
+<h2 id="三修改">三、修改</h2>
+<h3 id="1-收窄当前单测边界">1. 收窄当前单测边界</h3>
+<p>如果当前测试目标是海外业务实现，就不应从入口函数切入，而应直接调用海外实现函数或业务对象。</p>
+<p>不推荐：</p>
+<pre><code class="hljs language-go"><span class="hljs-function"><span class="hljs-keyword">func</span> <span class="hljs-title">TestOverseasBehavior</span><span class="hljs-params">(t *testing.T)</span></span> {
+	forceSetGlobalEnv(<span class="hljs-string">"overseas"</span>)
+	<span class="hljs-keyword">defer</span> restoreGlobalEnv()
+
+	resp, err := HandleRequest(ctx, req)
+
+	assertOverseasResponse(t, resp, err)
+}
+</code></pre>
+<p>推荐：</p>
+<pre><code class="hljs language-go"><span class="hljs-function"><span class="hljs-keyword">func</span> <span class="hljs-title">TestOverseasBehavior</span><span class="hljs-params">(t *testing.T)</span></span> {
+	manager := &amp;OverseasManager{
+		Repo: mockRepo,
+		UserClient: mockUserClient,
+		DataClient: mockDataClient,
+	}
+
+	resp, err := manager.Handle(ctx, req)
+
+	assertOverseasResponse(t, resp, err)
+}
+</code></pre>
+<p>这样测试只关注海外业务行为，不再依赖环境模拟。</p>
+<h3 id="2-api-层只保留薄分发逻辑">2. API 层只保留薄分发逻辑</h3>
+<p>入口层应尽量只做三件事：</p>
+<ul>
+<li>参数解析。</li>
+<li>身份或上下文提取。</li>
+<li>根据环境选择业务实现。</li>
+</ul>
+<p>示例：</p>
+<pre><code class="hljs language-go"><span class="hljs-function"><span class="hljs-keyword">func</span> <span class="hljs-title">HandleRequest</span><span class="hljs-params">(ctx context.Context, req *Request)</span> <span class="hljs-params">(*Response, error)</span></span> {
+	<span class="hljs-keyword">if</span> env.IsOverseas() {
+		<span class="hljs-keyword">return</span> overseasManager.Handle(ctx, req)
+	}
+	<span class="hljs-keyword">return</span> domesticClient.Handle(ctx, req)
+}
+</code></pre>
+<p>这类入口函数本身不应承载复杂业务逻辑。</p>
+<p>如果要测入口层，只需要覆盖非常薄的分发行为：</p>
+<pre><code class="hljs language-go"><span class="hljs-function"><span class="hljs-keyword">func</span> <span class="hljs-title">TestHandleRequest_RouteToOverseas</span><span class="hljs-params">(t *testing.T)</span></span> {
+	envChecker := mockEnvChecker{overseas: <span class="hljs-literal">true</span>}
+	overseasManager := mockOverseasManager{}
+
+	handler := &amp;Handler{
+		EnvChecker: envChecker,
+		OverseasManager: overseasManager,
+	}
+
+	_, _ = handler.HandleRequest(ctx, req)
+
+	assertCalled(t, overseasManager)
+}
+</code></pre>
+<p>这类测试数量应少，重点是验证路由，而不是重复验证海外业务细节。</p>
+<h3 id="3-将业务逻辑下沉到-manager-层">3. 将业务逻辑下沉到 manager 层</h3>
+<p>更合理的结构是：</p>
+<pre><code class="hljs language-text">api/
+ handler.go
+
+lib/
+ manager/
+ overseas_manager.go
+</code></pre>
+<p>定义完整接口：</p>
+<pre><code class="hljs language-go"><span class="hljs-keyword">type</span> OverseasManager <span class="hljs-keyword">interface</span> {
+	Handle(ctx context.Context, req *Request) (*Response, error)
+	Preview(ctx context.Context, req *PreviewRequest) (*PreviewResponse, error)
+	Update(ctx context.Context, req *UpdateRequest) (*UpdateResponse, error)
+}
+</code></pre>
+<p>实现层通过依赖注入获得 DAO、RPC client 或其他基础能力：</p>
+<pre><code class="hljs language-go"><span class="hljs-keyword">type</span> overseasManager <span class="hljs-keyword">struct</span> {
+	repo Repository
+	userClient UserClient
+	dataClient DataClient
+}
+
+<span class="hljs-function"><span class="hljs-keyword">func</span> <span class="hljs-params">(m *overseasManager)</span> <span class="hljs-title">Handle</span><span class="hljs-params">(ctx context.Context, req *Request)</span> <span class="hljs-params">(*Response, error)</span></span> {
+	<span class="hljs-comment">// overseas business logic</span>
+}
+</code></pre>
+<p>这样单测可以直接构造 manager，并 mock 它真正依赖的外部组件。</p>
+<h3 id="4-删除无用或位置不合理的-mock">4. 删除无用或位置不合理的 mock</h3>
+<p>对于未使用的本地大 mock，应直接删除。</p>
+<p>如果后续确实需要测试国内分支，应优先在接口定义方生成统一 mock，例如：</p>
+<pre><code class="hljs language-text">external/service/client/mock_client.go
+</code></pre>
+<p>业务测试中直接使用：</p>
+<pre><code class="hljs language-go">client.NewMockServiceClient(ctrl)
+</code></pre>
+<p>而不是在具体业务目录下临时生成一份完整 mock。</p>
+<h3 id="5-环境配置正确性放到更合适的位置">5. 环境配置正确性放到更合适的位置</h3>
+<p>环境配置类验证建议放在：</p>
+<ul>
+<li>配置校验脚本。</li>
+<li>启动阶段自检。</li>
+<li>集成测试。</li>
+<li>E2E 测试。</li>
+<li>部署前检查。</li>
+</ul>
+<p>普通单测只关心边界内逻辑，不负责证明真实环境配置是否正确。</p>
+<h2 id="四总结">四、总结</h2>
+<p>环境依赖类单测最重要的是先划清边界。</p>
+<p>如果测试目标是业务实现，就直接测试业务实现；如果测试目标是入口路由，就只测试分发；如果测试目标是环境配置正确性，就不要放在普通单测里。</p>
+<p>这类问题通常不是“如何更优雅地模拟环境”，而是代码职责和测试边界没有对齐。</p>
+<p>更推荐的设计是：</p>
+<pre><code class="hljs language-text">API 层负责路由。
+Manager 层负责业务。
+环境判断停留在入口边界。
+单测主要覆盖 manager。
+环境配置正确性交给集成测试或配置校验。
+</code></pre>
+<p>对应原则可以概括为：</p>
+<pre><code class="hljs language-text">不要在单测里伪造完整运行环境；
+把环境作为边界条件处理；
+把业务逻辑放在可直接测试的对象中。
+</code></pre>
+<p>这样可以减少全局状态污染、降低 mock 维护成本，也能让测试失败时更容易定位到真正的业务问题。</p>
+
+            
+            
+        </body>
+        </html>
