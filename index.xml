@@ -1,4 +1,42 @@
-<?xml version="1.0" encoding="utf-8" standalone="yes"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom" xmlns:content="http://purl.org/rss/1.0/modules/content/"><channel><title>Zhanyi 的技术博客</title><link>https://sunzhanyi.github.io/</link><description>Recent content on Zhanyi 的技术博客</description><generator>Hugo</generator><language>zh-cn</language><lastBuildDate>Sat, 30 May 2026 20:16:35 +0800</lastBuildDate><atom:link href="https://sunzhanyi.github.io/index.xml" rel="self" type="application/rss+xml"/><item><title>原来用Go写测试这么简单</title><link>https://sunzhanyi.github.io/post/%E5%8E%9F%E6%9D%A5%E7%94%A8go%E5%86%99%E6%B5%8B%E8%AF%95%E8%BF%99%E4%B9%88%E7%AE%80%E5%8D%95/</link><pubDate>Sat, 30 May 2026 20:16:35 +0800</pubDate><guid>https://sunzhanyi.github.io/post/%E5%8E%9F%E6%9D%A5%E7%94%A8go%E5%86%99%E6%B5%8B%E8%AF%95%E8%BF%99%E4%B9%88%E7%AE%80%E5%8D%95/</guid><description>&lt;p&gt;在 Go 的开发过程中，可能都碰到过：&lt;/p&gt;
+<?xml version="1.0" encoding="utf-8" standalone="yes"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom" xmlns:content="http://purl.org/rss/1.0/modules/content/"><channel><title>Zhanyi 的技术博客</title><link>https://sunzhanyi.github.io/</link><description>Recent content on Zhanyi 的技术博客</description><generator>Hugo</generator><language>zh-cn</language><lastBuildDate>Wed, 08 Jul 2026 21:27:17 +0800</lastBuildDate><atom:link href="https://sunzhanyi.github.io/index.xml" rel="self" type="application/rss+xml"/><item><title>Go 缓存踩坑：被 Slice 共享底层数组背刺的一天</title><link>https://sunzhanyi.github.io/post/go-%E7%BC%93%E5%AD%98%E8%B8%A9%E5%9D%91%E8%A2%AB-slice-%E5%85%B1%E4%BA%AB%E5%BA%95%E5%B1%82%E6%95%B0%E7%BB%84%E8%83%8C%E5%88%BA%E7%9A%84%E4%B8%80%E5%A4%A9/</link><pubDate>Wed, 08 Jul 2026 21:27:17 +0800</pubDate><guid>https://sunzhanyi.github.io/post/go-%E7%BC%93%E5%AD%98%E8%B8%A9%E5%9D%91%E8%A2%AB-slice-%E5%85%B1%E4%BA%AB%E5%BA%95%E5%B1%82%E6%95%B0%E7%BB%84%E8%83%8C%E5%88%BA%E7%9A%84%E4%B8%80%E5%A4%A9/</guid><description>&lt;p&gt;最近遇到了一个有趣的问题：内容列表页面的封面图全部消失了，只剩下标题和时长等文字信息。&lt;/p&gt;
+&lt;p&gt;看似是一个简单的&amp;quot;图片不显示&amp;quot;问题，排查下来却是对多个问题的层层剥离——修好一个，下一个才浮出水面。这个过程中踩的坑具有一定普遍性，整理出来供大家参考。&lt;/p&gt;
+&lt;h2 id="系统背景"&gt;系统背景&lt;/h2&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;strong&gt;Go GRPC 微服务：&lt;/strong&gt; 提供内容列表筛选等接口&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;内存缓存池：&lt;/strong&gt; 服务启动时从数据库加载全量数据到内存，定时自动 reload 保持数据新鲜&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;多环境部署：&lt;/strong&gt; 不同环境的节点需要将图片地址转换为当前环境可访问的地址&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;数据结构：&lt;/strong&gt; &lt;code&gt;CoverUrl&lt;/code&gt;（默认封面图）和 &lt;code&gt;CoverUrlAlt&lt;/code&gt;（备用封面图）两个字段&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;列表接口的核心逻辑：从内存缓存中按分类获取列表，按照环境，将备用封面图 URL 经过转换后赋值给 &lt;code&gt;CoverUrl&lt;/code&gt; 字段返回给客户端。&lt;/p&gt;
+&lt;h2 id="乌龙数据库中的异常数据"&gt;乌龙：数据库中的&amp;quot;异常数据&amp;quot;&lt;/h2&gt;
+&lt;h3 id="排查过程"&gt;排查过程&lt;/h3&gt;
+&lt;p&gt;发现图片不显示后，我的第一反应是去数据库看封面图数据。结果发现一个&amp;quot;异常&amp;quot;：&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;A 类封面图 URL（客户端直接上传存储的）：&lt;/li&gt;
+&lt;/ul&gt;
+&lt;pre tabindex="0"&gt;&lt;code&gt;https://cdn.example.com/img/cover.jpg?token=abc&amp;amp;ts=123
+&lt;/code&gt;&lt;/pre&gt;&lt;ul&gt;
+&lt;li&gt;B 类封面图 URL（服务端组装数据后 Marshal 存储的）：&lt;/li&gt;
+&lt;/ul&gt;
+&lt;pre tabindex="0"&gt;&lt;code&gt;https://cdn.example.com/img/cover.jpg?token=abc\u0026ts=123
+&lt;/code&gt;&lt;/pre&gt;&lt;p&gt;两组数据&amp;quot;长得不一样&amp;quot;！B 类图的 &lt;code&gt;&amp;amp;&lt;/code&gt; 全部变成了 &lt;code&gt;\u0026&lt;/code&gt;。直觉告诉我这就是问题所在——URL 中的参数分隔符被转义了，解析肯定失败。&lt;/p&gt;
+&lt;p&gt;于是写了一个反转义函数，部署上线：&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"&gt;&lt;code class="language-go" data-lang="go"&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="color:#66d9ef"&gt;func&lt;/span&gt; &lt;span style="color:#a6e22e"&gt;UnescapeURL&lt;/span&gt;(&lt;span style="color:#a6e22e"&gt;rawURL&lt;/span&gt; &lt;span style="color:#66d9ef"&gt;string&lt;/span&gt;) &lt;span style="color:#66d9ef"&gt;string&lt;/span&gt; {
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt; &lt;span style="color:#66d9ef"&gt;return&lt;/span&gt; &lt;span style="color:#a6e22e"&gt;strings&lt;/span&gt;.&lt;span style="color:#a6e22e"&gt;ReplaceAll&lt;/span&gt;(&lt;span style="color:#a6e22e"&gt;rawURL&lt;/span&gt;, &lt;span style="color:#e6db74"&gt;&amp;#34;\\u0026&amp;#34;&lt;/span&gt;, &lt;span style="color:#e6db74"&gt;&amp;#34;&amp;amp;&amp;#34;&lt;/span&gt;)
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;}
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;p&gt;问题依然存在，封面图还是不显示。&lt;/p&gt;
+&lt;h3 id="复盘"&gt;复盘&lt;/h3&gt;
+&lt;p&gt;仔细思考了一下才明白：&lt;code&gt;\u0026&lt;/code&gt; 是 Go 标准库 &lt;code&gt;json.Marshal&lt;/code&gt; 的默认行为——它会将 &lt;code&gt;&amp;amp;&lt;/code&gt;、&lt;code&gt;&amp;lt;&lt;/code&gt;、&lt;code&gt;&amp;gt;&lt;/code&gt; 转义为 Unicode 形式以防止 XSS。这是数据&lt;strong&gt;存储格式&lt;/strong&gt;，不是数据&lt;strong&gt;使用格式&lt;/strong&gt;。&lt;/p&gt;
+&lt;p&gt;出问题的接口在读取数据库后，经过了标准的 &lt;code&gt;json.Unmarshal&lt;/code&gt; 反序列化，&lt;code&gt;\u0026&lt;/code&gt; 会被&lt;strong&gt;自动还原&lt;/strong&gt;为 &lt;code&gt;&amp;amp;&lt;/code&gt;：&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;-webkit-text-size-adjust:none;"&gt;&lt;code class="language-go" data-lang="go"&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="color:#75715e"&gt;// DB 中存储的 JSON 字符串&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="color:#a6e22e"&gt;dbValue&lt;/span&gt; &lt;span style="color:#f92672"&gt;:=&lt;/span&gt; &lt;span style="color:#e6db74"&gt;`{&amp;#34;url&amp;#34;:&amp;#34;https://cdn.example.com/img?token=abc\u0026ts=123&amp;#34;}`&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="color:#75715e"&gt;// Unmarshal 后自动还原&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="color:#66d9ef"&gt;var&lt;/span&gt; &lt;span style="color:#a6e22e"&gt;config&lt;/span&gt; &lt;span style="color:#66d9ef"&gt;struct&lt;/span&gt;{ &lt;span style="color:#a6e22e"&gt;URL&lt;/span&gt; &lt;span style="color:#66d9ef"&gt;string&lt;/span&gt; }
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="color:#a6e22e"&gt;json&lt;/span&gt;.&lt;span style="color:#a6e22e"&gt;Unmarshal&lt;/span&gt;([]byte(&lt;span style="color:#a6e22e"&gt;dbValue&lt;/span&gt;), &lt;span style="color:#f92672"&gt;&amp;amp;&lt;/span&gt;&lt;span style="color:#a6e22e"&gt;config&lt;/span&gt;)
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="color:#75715e"&gt;// config.URL = &amp;#34;https://cdn.example.com/img?token=abc&amp;amp;ts=123&amp;#34;&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span style="display:flex;"&gt;&lt;span&gt;&lt;span style="color:#75715e"&gt;// ✓ \u0026 已自动还原为 &amp;amp;&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;p&gt;&lt;strong&gt;这次误判的根本原因是：没有先确认出问题的接口走了什么数据处理链路，就凭直觉观察 DB 数据直接下了结论。&lt;/strong&gt;&lt;/p&gt;</description></item><item><title>原来用Go写测试这么简单</title><link>https://sunzhanyi.github.io/post/%E5%8E%9F%E6%9D%A5%E7%94%A8go%E5%86%99%E6%B5%8B%E8%AF%95%E8%BF%99%E4%B9%88%E7%AE%80%E5%8D%95/</link><pubDate>Sat, 30 May 2026 20:16:35 +0800</pubDate><guid>https://sunzhanyi.github.io/post/%E5%8E%9F%E6%9D%A5%E7%94%A8go%E5%86%99%E6%B5%8B%E8%AF%95%E8%BF%99%E4%B9%88%E7%AE%80%E5%8D%95/</guid><description>&lt;p&gt;在 Go 的开发过程中，可能都碰到过：&lt;/p&gt;
 &lt;ul&gt;
 &lt;li&gt;函数返回值中明确定义了 error 返回类型，但调用方直接用 &lt;code&gt;_&lt;/code&gt; 忽略，虽然程序不报错，但这就等于在程序中埋了一个不知道什么时候会被引爆的雷&lt;/li&gt;
 &lt;li&gt;写了一个折扣计算函数，只跑了正常输入的情况，就编译提交发布。结果线上的折扣计算出现各种奇怪的结果，只能紧急上线修复。&lt;/li&gt;
